@@ -18,7 +18,7 @@ sudo apt-get install -y \
         python-yaml \
         curl \
     
-pip install exifread==2.1.2 \
+pip3 install exifread==2.1.2 \
                 gpxpy==1.1.2 \
                 networkx==1.11 \
                 numpy \
@@ -63,7 +63,7 @@ cd ceres-solver-1.14.0
 mkdir -p build
 cd build
 cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
-make -j4 install
+sudo make -j8 install
 cd ../..
 sudo rm -R ceres-solver-1.14.0
 git clone https://github.com/paulinus/opengv.git
@@ -72,7 +72,7 @@ git submodule update --init --recursive
 mkdir -p build
 cd build
 cmake .. -DBUILD_PYTHON=ON -DPYBIND11_PYTHON_VERSION=3.6 -DPYTHON_INSTALL_DIR=/usr/local/lib/python3.6/dist-packages/
-sudo make install
+sudo make -j8 install
 cd ../../..
-python setup.py build
-pip install repoze.lru
+python3 setup.py build
+pip3 install repoze.lru
