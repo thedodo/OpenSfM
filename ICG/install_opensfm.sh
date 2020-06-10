@@ -31,9 +31,9 @@ pip install exifread==2.1.2 \
                 cloudpickle==0.4.0 \
                 loky==1.2.1
 
-git clone --recursive https://github.com/mapillary/OpenSfM  
              
-cd OpenSfM
+cd ..
+git submodule update --init --recursive
 sudo apt-get update \
     && apt-get install -y \
         build-essential \
@@ -63,7 +63,7 @@ cd ceres-solver-1.14.0
 mkdir -p build
 cd build
 cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
-sudo make -j4 install
+make -j4 install
 cd ../..
 sudo rm -R ceres-solver-1.14.0
 git clone https://github.com/paulinus/opengv.git
