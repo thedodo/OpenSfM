@@ -22,3 +22,6 @@ In der Konsole in diesem Ordner:
   - chmod +x test_install.sh
   - sh test_install.sh
 - Wenn alles geklappt hat, sollte sich in /pfad/zu/opensfm/data/lund/undistorted/depthmaps/ eine Datei namens merged.ply befinden.
+  - Die 3D Reconstruktion kann mit beliebigen Programm geöffnet werden, z.B.: 
+    - CloudCompare: https://www.danielgm.net/cc/
+    - Meshlab: https://www.meshlab.net/
