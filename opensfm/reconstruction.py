@@ -1280,18 +1280,27 @@ def compute_statistics(reconstruction):
     return stats
 
 
-def incremental_reconstruction(data, tracks_manager):
+def incremental_reconstruction(data, tracks_manager,localize=False):
     """Run the entire incremental reconstruction pipeline."""
     logger.info("Starting incremental reconstruction")
     report = {}
     chrono = Chronometer()
 
     images = tracks_manager.get_shot_ids()
-
-    if not data.reference_lla_exists():
-        data.invent_reference_lla(images)
-
     remaining_images = set(images)
+
+    try:
+        existing_reconstructions = data.load_reconstruction()
+    except IOError:
+        existing_reconstructions = []
+
+    reconstructed_images = set(image for reconstruction in existing_reconstructions for image in reconstruction.shots.keys())
+
+    if(localize):
+        remaining_images = set(images) - reconstructed_images
+    
+    print("Remaining Images: ", remaining_images)
+    
     camera_priors = data.load_camera_models()
     gcp = data.load_ground_control_points()
     common_tracks = tracking.all_common_tracks(tracks_manager)
