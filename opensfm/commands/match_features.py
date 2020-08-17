@@ -13,7 +13,6 @@ from opensfm.context import parallel_map
 
 logger = logging.getLogger(__name__)
 
-
 class Command:
     name = 'match_features'
     help = 'Match features between image pairs'
@@ -26,7 +25,7 @@ class Command:
         images = data.images()
 
         start = timer()
-        pairs_matches, preport = matching.match_images(data, images, images)
+        pairs_matches, preport = matching.match_images(data, images, images) #TODO: 2nd Argument, cand_images, will be those images that are query. 
         matching.save_matches(data, images, pairs_matches)
         end = timer()
 

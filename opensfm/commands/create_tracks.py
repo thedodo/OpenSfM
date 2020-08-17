@@ -20,9 +20,9 @@ class Command:
         data = dataset.DataSet(args.dataset)
 
         start = timer()
-        features, colors = tracking.load_features(data, data.images())
+        features, colors = tracking.load_features(data, data.images()) #TODO: Just get those images for which matches have been computed. 
         features_end = timer()
-        matches = tracking.load_matches(data, data.images())
+        matches = tracking.load_matches(data, data.images()) #TODO: Just get those images for which matches have been computed.
         matches_end = timer()
         tracks_manager = tracking.create_tracks_manager(features, colors, matches,
                                                         data.config)
