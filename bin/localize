@@ -17,7 +17,7 @@ cp $1/../localize/*.jpg $1/images/
 
 $PYTHON $DIR/opensfm extract_metadata $1
 $PYTHON $DIR/opensfm detect_features $1
-$PYTHON $DIR/opensfm match_features $1 
-$PYTHON $DIR/opensfm create_tracks $1
-$PYTHON $DIR/opensfm reconstruct $1
+$PYTHON $DIR/opensfm match_features $1 --localize 
+$PYTHON $DIR/opensfm create_tracks $1 --localize 
+$PYTHON $DIR/opensfm reconstruct $1 --localize
 

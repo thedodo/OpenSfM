@@ -95,7 +95,7 @@ def common_tracks(tracks_manager, im1, im2):
     return tracks, p1, p2
 
 
-def all_common_tracks(tracks_manager, include_features=True, min_common=50):
+def all_common_tracks(tracks_manager, include_features=True, min_common=50,rem_images=None):
     """List of tracks observed by each image pair.
 
     Args:
@@ -109,7 +109,13 @@ def all_common_tracks(tracks_manager, include_features=True, min_common=50):
         from second image
     """
     common_tracks = {}
+
+    #TODO: Get common tracks only for those images that need to be localized. 
     for(im1, im2), size in tracks_manager.get_all_pairs_connectivity().items():
+        if(not(rem_images is None)): #For localization, keep only tracks for those images that need localization.  
+            if(not(im1 in rem_images)): 
+                continue 
+            
         if size < min_common:
             continue
 

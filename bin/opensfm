@@ -23,6 +23,7 @@ subcommands = [module.Command() for module in commands.opensfm_commands]
 for command in subcommands:
     subparser = subparsers.add_parser(
         command.name, help=command.help)
+    subparser.add_argument('--localize', default=False, action="store_true")
     command.add_arguments(subparser)
 
 # Parse arguments

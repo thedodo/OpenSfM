@@ -14,7 +14,7 @@ class Command:
 
     def add_arguments(self, parser):
         parser.add_argument('dataset', help='dataset to process')
-        parser.add_argument('localize', default=False, action="store_true")
+        # parser.add_argument('localize', default=False, action="store_true")
 
     def run(self, args):
         data = dataset.DataSet(args.dataset)

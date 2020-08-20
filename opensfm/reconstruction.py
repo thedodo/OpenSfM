@@ -25,6 +25,7 @@ from opensfm.align import align_reconstruction, apply_similarity
 from opensfm.context import parallel_map, current_memory_usage
 from opensfm import pymap
 
+import os 
 logger = logging.getLogger(__name__)
 
 
@@ -688,21 +689,26 @@ def bootstrap_reconstruction(data, tracks_manager, camera_priors, im1, im2, p1, 
     return reconstruction, report
 
 
-def reconstructed_points_for_images(tracks_manager, reconstruction, images):
+def reconstructed_points_for_images(tracks_manager, reconstruction, images, localize=False):
     """Number of reconstructed points visible on each image.
 
     Returns:
         A list of (image, num_point) pairs sorted by decreasing number
         of points.
     """
-    non_reconstructed = [im for im in images if im not in reconstruction.shots]
+    # print("Reconstruction shots: ", reconstruction.shots)
+    if(localize):
+        non_reconstructed = images
+    else:
+        non_reconstructed = [im for im in images if im not in reconstruction.shots]
+    print("non reconstructed", non_reconstructed)
     res = pysfm.count_tracks_per_shot(
         tracks_manager, non_reconstructed, list(reconstruction.points.keys()))
     return sorted(res.items(), key=lambda x: -x[1])
 
 
 def resect(tracks_manager, reconstruction, shot_id,
-           camera, metadata, threshold, min_inliers):
+           camera, metadata, threshold, min_inliers, localize=False):
     """Try resecting and adding a shot to the reconstruction.
 
     Return:
@@ -718,6 +724,7 @@ def resect(tracks_manager, reconstruction, shot_id,
             ids.append(track)
     bs = np.array(bs)
     Xs = np.array(Xs)
+
     if len(bs) < 5:
         return False, {'num_common_points': len(bs)}
 
@@ -742,11 +749,14 @@ def resect(tracks_manager, reconstruction, shot_id,
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
-        shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
-        shot.metadata = metadata
-        for i, succeed in enumerate(inliers):
-            if succeed:
-                add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+        print("Rotation = ", R)
+        print("Translation = ", t)
+        if(not(localize)):
+            shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
+            shot.metadata = metadata
+            for i, succeed in enumerate(inliers):
+                if succeed:
+                    add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
         return True, report
     else:
         return False, report
@@ -1294,39 +1304,86 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     except IOError:
         existing_reconstructions = []
 
-    reconstructed_images = set(image for reconstruction in existing_reconstructions for image in reconstruction.shots.keys())
-
     if(localize):
-        remaining_images = set(images) - reconstructed_images
-    
+        loc_path = os.path.join(data.data_path, "../localize")
+        remaining_images = [im for im in os.listdir(loc_path)]
+
     print("Remaining Images: ", remaining_images)
     
     camera_priors = data.load_camera_models()
     gcp = data.load_ground_control_points()
-    common_tracks = tracking.all_common_tracks(tracks_manager)
+    
+    if(localize):
+        common_tracks = tracking.all_common_tracks(tracks_manager,rem_images=remaining_images)
+    
+    else: 
+        common_tracks = tracking.all_common_tracks(tracks_manager)
+    
     reconstructions = []
     pairs = compute_image_pairs(common_tracks, camera_priors, data)
     chrono.lap('compute_image_pairs')
     report['num_candidate_image_pairs'] = len(pairs)
     report['reconstructions'] = []
-    for im1, im2 in pairs:
-        if im1 in remaining_images and im2 in remaining_images:
-            rec_report = {}
-            report['reconstructions'].append(rec_report)
-            _, p1, p2 = common_tracks[im1, im2]
-            reconstruction, rec_report['bootstrap'] = bootstrap_reconstruction(
-                data, tracks_manager, camera_priors, im1, im2, p1, p2)
 
-            if reconstruction:
-                remaining_images.remove(im1)
-                remaining_images.remove(im2)
-                reconstruction, rec_report['grow'] = grow_reconstruction(
-                    data, tracks_manager, reconstruction, remaining_images, camera_priors, gcp)
-                reconstructions.append(reconstruction)
-                reconstructions = sorted(reconstructions,
-                                         key=lambda x: -len(x.shots))
-                rec_report['stats'] = compute_statistics(reconstruction)
-                logger.info(rec_report['stats'])
+    print(pairs)
+    if(localize):
+        #Localize each image.
+        reconstruction = data.load_reconstruction()[0]
+        print("reconstruction: ", reconstruction)
+        for im in remaining_images:
+            candidates = reconstructed_points_for_images(tracks_manager, reconstruction, [im], True)
+            if not candidates:
+                break
+            logger.info("-------------------------------------------------------")
+            threshold = data.config['resection_threshold']
+            min_inliers = data.config['resection_min_inliers']
+            for image, num_tracks in candidates:
+                camera = reconstruction.cameras[data.load_exif(image)['camera']]
+                metadata = get_image_metadata(data, image)
+                ok, resrep = resect(tracks_manager, reconstruction, image,
+                                    camera, metadata, threshold, min_inliers, True)
+                if not ok:
+                    continue
+
+                bundle_single_view(reconstruction, image,
+                                camera_priors, data.config)
+
+                logger.info("Adding {0} to the reconstruction".format(image))
+                step = {
+                    'image': image,
+                    'resection': resrep,
+                    'memory_usage': current_memory_usage()
+                }
+                report['steps'].append(step)
+                remaining_images.remove(image)
+            # for im1, im2 in pairs:
+            #     if(im1 != im):
+            #         continue 
+            #     print("Doing ", im1, " and ", im2)
+    
+    else:
+        for im1, im2 in pairs:
+            print("Doing ", im1, " and ", im2)
+            if (im1 in remaining_images and im2 in remaining_images) or localize:
+                rec_report = {}
+                report['reconstructions'].append(rec_report)
+                _, p1, p2 = common_tracks[im1, im2]
+                reconstruction, rec_report['bootstrap'] = bootstrap_reconstruction(
+                    data, tracks_manager, camera_priors, im1, im2, p1, p2)
+
+                if reconstruction:
+                    remaining_images.remove(im1)
+                    remaining_images.remove(im2)
+                    reconstruction, rec_report['grow'] = grow_reconstruction(
+                        data, tracks_manager, reconstruction, remaining_images, camera_priors, gcp)
+                    reconstructions.append(reconstruction)
+                    reconstructions = sorted(reconstructions,
+                                            key=lambda x: -len(x.shots))
+                    rec_report['stats'] = compute_statistics(reconstruction)
+                    logger.info(rec_report['stats'])
+            
+                
+
 
     for k, r in enumerate(reconstructions):
         logger.info("Reconstruction {}: {} images, {} points".format(

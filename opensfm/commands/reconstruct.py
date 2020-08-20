@@ -14,15 +14,23 @@ class Command:
 
     def add_arguments(self, parser):
         parser.add_argument('dataset', help='dataset to process')
+        # parser.add_argument('--localize', help='dataset to process')
 
     def run(self, args):
         start = time.time()
         data = dataset.DataSet(args.dataset)
         tracks_manager = data.load_tracks_manager()
-        report, reconstructions = reconstruction.\
+        if(args.localize):
+            report, reconstructions = reconstruction.\
+            incremental_reconstruction(data, tracks_manager, True)
+        else:
+            report, reconstructions = reconstruction.\
             incremental_reconstruction(data, tracks_manager)
         end = time.time()
         with open(data.profile_log(), 'a') as fout:
             fout.write('reconstruct: {0}\n'.format(end - start))
-        data.save_reconstruction(reconstructions)
-        data.save_report(io.json_dumps(report), 'reconstruction.json')
+        if(not(args.localize)):
+            data.save_reconstruction(reconstructions)
+            data.save_report(io.json_dumps(report), 'reconstruction.json')
+        else:
+            print("Finished Localization!")
