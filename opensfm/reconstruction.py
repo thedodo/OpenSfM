@@ -708,7 +708,7 @@ def reconstructed_points_for_images(tracks_manager, reconstruction, images, loca
 
 
 def resect(tracks_manager, reconstruction, shot_id,
-           camera, metadata, threshold, min_inliers, localize=False):
+           camera, metadata, threshold, min_inliers, localize=False, reference=None):
     """Try resecting and adding a shot to the reconstruction.
 
     Return:
@@ -757,6 +757,9 @@ def resect(tracks_manager, reconstruction, shot_id,
             for i, succeed in enumerate(inliers):
                 if succeed:
                     add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+        if(not(reference is None)):
+            gps = reference.to_lla(t[0], t[1], t[2])
+            print("GPS of translation is: ", gps)
         return True, report
     else:
         return False, report
@@ -1340,11 +1343,11 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             for image, num_tracks in candidates:
                 camera = reconstruction.cameras[data.load_exif(image)['camera']]
                 metadata = get_image_metadata(data, image)
+                reference = data.load_reference()
                 ok, resrep = resect(tracks_manager, reconstruction, image,
-                                    camera, metadata, threshold, min_inliers, True)
+                                    camera, metadata, threshold, min_inliers, True, reference)
                 if not ok:
                     continue
-
                 bundle_single_view(reconstruction, image,
                                 camera_priors, data.config)
 
@@ -1354,7 +1357,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     'resection': resrep,
                     'memory_usage': current_memory_usage()
                 }
-                report['steps'].append(step)
+                # report['steps'].append(step)
                 remaining_images.remove(image)
             # for im1, im2 in pairs:
             #     if(im1 != im):
@@ -1383,7 +1386,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     logger.info(rec_report['stats'])
             
                 
-
+    
 
     for k, r in enumerate(reconstructions):
         logger.info("Reconstruction {}: {} images, {} points".format(
