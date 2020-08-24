@@ -25,6 +25,7 @@ from opensfm.align import align_reconstruction, apply_similarity
 from opensfm.context import parallel_map, current_memory_usage
 from opensfm import pymap
 
+import json 
 import os 
 logger = logging.getLogger(__name__)
 
@@ -764,7 +765,6 @@ def resect(tracks_manager, reconstruction, shot_id,
         shot.metadata = metadata
         for i, succeed in enumerate(inliers):
             if succeed:
-                print("Added shot to reconstruction: ", shot_id)
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
         # if(not(reference is None)):
         #     gps = reference.to_lla(t[0], t[1], t[2])
@@ -1311,7 +1311,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
 
     if(localize):
         loc_path = os.path.join(data.data_path, "../localize")
-        remaining_images = [im for im in os.listdir(loc_path)]
+        remaining_images = [im for im in os.listdir(loc_path) if im.endswith(".jpg")]
 
     print("Remaining Images: ", remaining_images)
     
@@ -1331,6 +1331,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     report['reconstructions'] = []
 
     print(pairs)
+    localize_dict = {} 
     if(localize):
         #Localize each image.
         reconstruction = data.load_reconstruction()[0]
@@ -1343,7 +1344,9 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             threshold = data.config['resection_threshold']
             min_inliers = data.config['resection_min_inliers']
             for image, num_tracks in candidates:
+                shot_data_dict = {}
                 camera = reconstruction.cameras[data.load_exif(image)['camera']]
+                print("Exif of ", image, " :", camera)
                 metadata = get_image_metadata(data, image)
                 reference = data.load_reference()
                 ok, resrep = resect(tracks_manager, reconstruction, image,
@@ -1353,22 +1356,21 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 bundle_single_view(reconstruction, image,
                                 camera_priors, data.config)
                 shot = reconstruction.shots[image]
+
+                logger.info("Localized image {0}".format(image))
+
                 print("Shot ", image, " rotation :", shot.pose.rotation)
                 print("Shot ", image, " translation :", shot.pose.translation)
-
+                shot_data_dict['rotation'] = shot.pose.rotation.tolist()
+                shot_data_dict['translation'] = shot.pose.translation.tolist()
+                
                 if(not(reference is None)):
                     t = shot.pose.translation
                     gps = reference.to_lla(t[0], t[1], t[2])
                     print("GPS of translation is: ", gps)
+                    shot_data_dict['gps'] = gps
                 
-                logger.info("Adding {0} to the reconstruction".format(image))
-                step = {
-                    'image': image,
-                    'resection': resrep,
-                    'memory_usage': current_memory_usage()
-                }
-
-                # report['steps'].append(step)
+                localize_dict[im] = shot_data_dict
                 remaining_images.remove(image)
 
                 #Clean up images after localization. 
@@ -1389,6 +1391,9 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             #     if(im1 != im):
             #         continue 
             #     print("Doing ", im1, " and ", im2)
+        print("localize dict = ", localize_dict)
+        with open(os.path.join(data.data_path, "../localize/", "localize.json"), 'w') as fp:
+            json.dump(localize_dict, fp)
     
     else:
         for im1, im2 in pairs:
@@ -1411,9 +1416,6 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     rec_report['stats'] = compute_statistics(reconstruction)
                     logger.info(rec_report['stats'])
             
-                
-    
-
     for k, r in enumerate(reconstructions):
         logger.info("Reconstruction {}: {} images, {} points".format(
             k, len(r.shots), len(r.points)))
