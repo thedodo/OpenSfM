@@ -1310,7 +1310,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
         existing_reconstructions = []
 
     if(localize):
-        loc_path = os.path.join(data.data_path, "../localize")
+        loc_path = os.path.join(data.data_path, "localize")
         remaining_images = [im for im in os.listdir(loc_path) if im.endswith(".jpg")]
 
     print("Remaining Images: ", remaining_images)
@@ -1392,7 +1392,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             #         continue 
             #     print("Doing ", im1, " and ", im2)
         print("localize dict = ", localize_dict)
-        with open(os.path.join(data.data_path, "../localize/", "localize.json"), 'w') as fp:
+        with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
             json.dump(localize_dict, fp)
     
     else:

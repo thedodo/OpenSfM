@@ -27,7 +27,7 @@ class Command:
         data = dataset.DataSet(args.dataset)
         queryImages = None
         if(args.localize):
-            localizeDir = os.path.join(args.dataset, "../localize")
+            localizeDir = os.path.join(args.dataset, "localize")
             print("Localization - creating matches: ")
             queryImages = [x for x in os.listdir(localizeDir) if x.endswith(".jpg")]
             [print(os.path.join(localizeDir, str(x))) for x in queryImages]
