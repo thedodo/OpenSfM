@@ -76,3 +76,10 @@ sudo make -j8 install
 cd ../../..
 python3 setup.py build
 pip3 install repoze.lru
+sudo apt-get install build-essential
+sudo apt-get install python-all-dev
+sudo apt-get install libexiv2-dev
+sudo apt-get install libboost-python-dev
+pip3 install piexif
+
+
