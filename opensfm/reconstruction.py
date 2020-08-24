@@ -230,8 +230,8 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
     shot.pose.rotation = [s.r[0], s.r[1], s.r[2]]
     shot.pose.translation = [s.t[0], s.t[1], s.t[2]]
 
-    print("Shot ", shot_id, " rotation :", shot.pose.rotation)
-    print("Shot ", shot_id, " translation :", shot.pose.translation)
+    # print("Shot ", shot_id, " rotation :", shot.pose.rotation)
+    # print("Shot ", shot_id, " translation :", shot.pose.translation)
 
 
 
@@ -765,9 +765,9 @@ def resect(tracks_manager, reconstruction, shot_id,
             if succeed:
                 print("Added shot to reconstruction: ", shot_id)
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
-        if(not(reference is None)):
-            gps = reference.to_lla(t[0], t[1], t[2])
-            print("GPS of translation is: ", gps)
+        # if(not(reference is None)):
+        #     gps = reference.to_lla(t[0], t[1], t[2])
+        #     print("GPS of translation is: ", gps)
         return True, report
     else:
         return False, report
@@ -1351,7 +1351,15 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     continue
                 bundle_single_view(reconstruction, image,
                                 camera_priors, data.config)
+                shot = reconstruction.shots[image]
+                print("Shot ", image, " rotation :", shot.pose.rotation)
+                print("Shot ", image, " translation :", shot.pose.translation)
 
+                if(not(reference is None)):
+                    t = shot.pose.translation
+                    gps = reference.to_lla(t[0], t[1], t[2])
+                    print("GPS of translation is: ", gps)
+                
                 logger.info("Adding {0} to the reconstruction".format(image))
                 step = {
                     'image': image,
