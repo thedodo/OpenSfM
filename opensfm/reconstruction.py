@@ -219,7 +219,7 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
         config['radial_distorsion_p2_sd'],
         config['radial_distorsion_k3_sd'])
     ba.set_num_threads(config['processes'])
-    ba.set_max_num_iterations(10)
+    ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")
 
     ba.run()
@@ -229,6 +229,10 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
     s = ba.get_shot(shot_id)
     shot.pose.rotation = [s.r[0], s.r[1], s.r[2]]
     shot.pose.translation = [s.t[0], s.t[1], s.t[2]]
+
+    print("Shot ", shot_id, " rotation :", shot.pose.rotation)
+    print("Shot ", shot_id, " translation :", shot.pose.translation)
+
 
 
 def bundle_local(reconstruction, camera_priors, gcp, central_shot_id, config):
@@ -697,13 +701,14 @@ def reconstructed_points_for_images(tracks_manager, reconstruction, images, loca
         of points.
     """
     # print("Reconstruction shots: ", reconstruction.shots)
-    if(localize):
-        non_reconstructed = images
-    else:
-        non_reconstructed = [im for im in images if im not in reconstruction.shots]
-    print("non reconstructed", non_reconstructed)
+    # if(localize):
+    #     non_reconstructed = images
+    # else:
+    non_reconstructed = [im for im in images if im not in reconstruction.shots]
+    print("Non Reconstructed", non_reconstructed)
     res = pysfm.count_tracks_per_shot(
         tracks_manager, non_reconstructed, list(reconstruction.points.keys()))
+    print("Res = ", res)
     return sorted(res.items(), key=lambda x: -x[1])
 
 
@@ -746,17 +751,20 @@ def resect(tracks_manager, reconstruction, shot_id,
         'num_common_points': len(bs),
         'num_inliers': ninliers,
     }
+    
+    min_inliers = 3
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
         print("Rotation = ", R)
         print("Translation = ", t)
-        if(not(localize)):
-            shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
-            shot.metadata = metadata
-            for i, succeed in enumerate(inliers):
-                if succeed:
-                    add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+        # if(not(localize)):
+        shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
+        shot.metadata = metadata
+        for i, succeed in enumerate(inliers):
+            if succeed:
+                print("Added shot to reconstruction: ", shot_id)
+                add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
         if(not(reference is None)):
             gps = reference.to_lla(t[0], t[1], t[2])
             print("GPS of translation is: ", gps)
@@ -1183,22 +1191,15 @@ def grow_reconstruction(data, tracks_manager, reconstruction, images, camera_pri
     should_bundle = ShouldBundle(data, reconstruction)
     should_retriangulate = ShouldRetriangulate(data, reconstruction)
     while True:
-        if config['save_partial_reconstructions']:
-            paint_reconstruction(data, tracks_manager, reconstruction)
-            data.save_reconstruction(
-                [reconstruction], 'reconstruction.{}.json'.format(
-                    datetime.datetime.now().isoformat().replace(':', '_')))
-
         candidates = reconstructed_points_for_images(
             tracks_manager, reconstruction, images)
         if not candidates:
             break
-
         logger.info("-------------------------------------------------------")
         threshold = data.config['resection_threshold']
         min_inliers = data.config['resection_min_inliers']
         for image, num_tracks in candidates:
-
+            print("candidate :", image)
             camera = reconstruction.cameras[data.load_exif(image)['camera']]
             metadata = get_image_metadata(data, image)
             ok, resrep = resect(tracks_manager, reconstruction, image,
