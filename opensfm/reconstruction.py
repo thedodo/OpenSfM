@@ -752,7 +752,8 @@ def resect(tracks_manager, reconstruction, shot_id,
         'num_inliers': ninliers,
     }
     
-    min_inliers = 3
+    if(localize):
+        min_inliers = 3
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
@@ -1366,8 +1367,24 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     'resection': resrep,
                     'memory_usage': current_memory_usage()
                 }
+
                 # report['steps'].append(step)
                 remaining_images.remove(image)
+
+                #Clean up images after localization. 
+                image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")
+                image_feature_path = os.path.join(data.data_path, "matches", image + ".features.npz")
+                image_matches_path = os.path.join(data.data_path, "features", image + "_matches.pkl.gz")
+                if(os.path.exists(image_metadata_path)):
+                    os.remove(image_metadata_path)
+                    print("Removed: ", image_metadata_path)
+                if(os.path.exists(image_feature_path)):
+                    os.remove(image_feature_path)
+                    print("Removed: ", image_feature_path)
+                if(os.path.exists(image_matches_path)):
+                    os.remove(image_matches_path)
+                    print("Removed: ", image_matches_path)
+
             # for im1, im2 in pairs:
             #     if(im1 != im):
             #         continue 
