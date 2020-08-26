@@ -23,7 +23,7 @@ struct BARelativeMotionError {
 
     // Compute rotation residual: log( Rij Ri Rj^t )  ->  log( Rij Ri^t Rj)
     const Eigen::Matrix<T,3,1> Rij = Rtij_.segment<3>(BA_SHOT_RX).cast<T>();
-    residual.segment(0, 3) = MultRotations(Rij, (-Ri).eval(), Rj);
+    residual.segment(0, 3) = MultRotations(Rij, (-Ri).eval(), Rj.eval());
 
     // Compute translation residual: tij - scale * ( tj - Rj Ri^t ti )  ->  tij - scale * Rj^t * (ti - tj)
     const auto tij = Rtij_.segment<3>(BA_SHOT_TX).cast<T>();
@@ -65,7 +65,7 @@ struct BARelativeSimilarityError : public BARelativeMotionError {
 };
 
 struct BARelativeRotationError {
-  BARelativeRotationError(const Eigen::Vector3d& Rij,
+  BARelativeRotationError(const Vec3d& Rij,
                           const Eigen::Matrix3d& scale_matrix)
       : Rij_(Rij)
       , scale_matrix_(scale_matrix)
@@ -82,11 +82,11 @@ struct BARelativeRotationError {
 
     // Compute rotation residual: log( Rij Ri Rj^t ) -> log( Rij Ri^t Rj)
     const Eigen::Matrix<T,3,1> Rij = Rij_.cast<T>();
-    residual = scale_matrix_.cast<T>() * MultRotations(Rij, (-Ri).eval(), Rj);
+    residual = scale_matrix_.cast<T>() * MultRotations(Rij, (-Ri).eval(), Rj.eval());
     return true;
   }
 
-  Eigen::Vector3d Rij_;
+  Vec3d Rij_;
   Eigen::Matrix3d scale_matrix_;
 };
 
@@ -106,7 +106,7 @@ struct BACommonPositionError {
     Eigen::Map< Eigen::Matrix<T,3,1> > residual(r);
 
     // error is : shot_origin_1 - shot_origin_2
-    Eigen::Matrix<T,3,1> error = OriginFromRT(R1, t1) - OriginFromRT(R2, t2);
+    Eigen::Matrix<T,3,1> error = t1 - t2;
 
     // restrict XYerror to some positive margin (?)
     for( int i = 0; i < 2; ++i){

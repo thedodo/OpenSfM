@@ -9,7 +9,6 @@ from codecs import encode, decode
 from six import string_types
 
 from opensfm.sensors import sensor_data
-from opensfm import types
 from opensfm import pygeometry
 
 
@@ -19,6 +18,7 @@ inch_in_mm = 25.4
 cm_in_mm = 10
 um_in_mm = 0.001
 default_projection = 'perspective'
+maximum_altitude = 1e4
 
 
 def eval_frac(value):
@@ -115,7 +115,7 @@ def parse_xmp_string(xmp_str):
     for _ in range(2):
         try:
             return x2d.parse(xmp_str)
-        except:
+        except Exception:
             xmp_str = unescape_string(xmp_str)
     return None
 
@@ -160,7 +160,7 @@ class EXIF:
 
     def extract_image_size(self):
         # Image Width and Image Height
-        if ('EXIF ExifImageWidth' in self.tags and # PixelXDimension
+        if ('EXIF ExifImageWidth' in self.tags and  # PixelXDimension
                 'EXIF ExifImageLength' in self.tags):  # PixelYDimension
             width, height = (int(self.tags['EXIF ExifImageWidth'].values[0]),
                              int(self.tags['EXIF ExifImageLength'].values[0]))
@@ -324,7 +324,7 @@ class EXIF:
             d['latitude'] = lat
             d['longitude'] = lon
         if altitude is not None:
-            d['altitude'] = altitude
+            d['altitude'] = min([maximum_altitude, altitude])
         if dop is not None:
             d['dop'] = dop
         return d
@@ -546,15 +546,20 @@ def camera_from_exif_metadata(metadata, data,
     elif calib_pt == 'fisheye':
         camera = pygeometry.Camera.create_fisheye(
             calib['focal'], calib['k1'], calib['k2'])
+    elif calib_pt == 'fisheye_opencv':
+        camera = pygeometry.Camera.create_fisheye_opencv(
+            calib['focal_x'], calib['focal_y'] / calib['focal_x'],
+            [calib['c_x'], calib['c_y']],
+            [calib['k1'], calib['k3'], calib['k3'], calib['k4']])
     elif calib_pt == 'dual':
         camera = pygeometry.Camera.create_dual(
             calib['transition'], calib['focal'], calib['k1'], calib['k2'])
     elif calib_pt in ['equirectangular', 'spherical']:
         camera = pygeometry.Camera.create_spherical()
     else:
-        raise ValueError("Unknown projection type: {}".format(pt))
+        raise ValueError("Unknown projection type: {}".format(calib_pt))
 
     camera.id = metadata['camera']
-    camera.width = metadata['width']
-    camera.height = metadata['height']
+    camera.width = int(metadata['width'])
+    camera.height = int(metadata['height'])
     return camera

@@ -21,6 +21,7 @@ from opensfm import features
 from opensfm import types
 from opensfm import context
 from opensfm import pygeometry
+from opensfm import pymap
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,12 @@ def camera_from_json(key, obj):
     elif pt == 'fisheye':
         camera = pygeometry.Camera.create_fisheye(
             obj['focal'], obj.get('k1', 0.0), obj.get('k2', 0.0))
+    elif pt == 'fisheye_opencv':
+        camera = pygeometry.Camera.create_fisheye_opencv(
+            obj['focal_x'], obj['focal_y'] / obj['focal_x'],
+            [obj.get('c_x', 0.0), obj.get('c_y', 0.0)],
+            [obj.get('k1', 0.0), obj.get('k2', 0.0),
+             obj.get('k3', 0.0), obj.get('k4', 0.0)])
     elif pt == 'dual':
         camera = pygeometry.Camera.create_dual(obj.get('transition', 0.5), obj['focal'],
                                                obj.get('k1', 0.0), obj.get('k2', 0.0))
@@ -57,27 +64,20 @@ def camera_from_json(key, obj):
     return camera
 
 
-def shot_from_json(key, obj, cameras):
+def shot_from_json(reconstruction, key, obj, is_pano_shot=False):
     """
     Read shot from a json object
     """
-    pose = types.Pose()
+    pose = pygeometry.Pose()
     pose.rotation = obj["rotation"]
     if "translation" in obj:
         pose.translation = obj["translation"]
 
-    metadata = types.ShotMetadata()
-    metadata.orientation = obj.get("orientation")
-    metadata.capture_time = obj.get("capture_time")
-    metadata.gps_dop = obj.get("gps_dop")
-    metadata.gps_position = obj.get("gps_position")
-    metadata.skey = obj.get("skey")
-
-    shot = types.Shot()
-    shot.id = key
-    shot.metadata = metadata
-    shot.pose = pose
-    shot.camera = cameras.get(obj["camera"])
+    if is_pano_shot:
+        shot = reconstruction.create_pano_shot(key, obj["camera"], pose)
+    else:
+        shot = reconstruction.create_shot(key, obj["camera"], pose)
+    shot.metadata = json_to_pymap_metadata(obj)
 
     if 'scale' in obj:
         shot.scale = obj['scale']
@@ -86,21 +86,18 @@ def shot_from_json(key, obj, cameras):
     if 'merge_cc' in obj:
         shot.merge_cc = obj['merge_cc']
     if 'vertices' in obj and 'faces' in obj:
-        shot.mesh = types.ShotMesh()
         shot.mesh.vertices = obj['vertices']
         shot.mesh.faces = obj['faces']
 
     return shot
 
 
-def point_from_json(key, obj):
+def point_from_json(reconstruction, key, obj):
     """
     Read a point from a json object
     """
-    point = types.Point()
-    point.id = key
+    point = reconstruction.create_point(key, obj["coordinates"])
     point.color = obj["color"]
-    point.coordinates = obj["coordinates"]
     return point
 
 
@@ -117,21 +114,18 @@ def reconstruction_from_json(obj):
 
     # Extract shots
     for key, value in iteritems(obj['shots']):
-        shot = shot_from_json(key, value, reconstruction.cameras)
-        reconstruction.add_shot(shot)
+        shot_from_json(reconstruction, key, value)
 
     # Extract points
     if 'points' in obj:
         for key, value in iteritems(obj['points']):
-            point = point_from_json(key, value)
-            reconstruction.add_point(point)
+            point_from_json(reconstruction, key, value)
 
     # Extract pano_shots
     if 'pano_shots' in obj:
-        reconstruction.pano_shots = {}
         for key, value in iteritems(obj['pano_shots']):
-            shot = shot_from_json(key, value, reconstruction.cameras)
-            reconstruction.pano_shots[shot.id] = shot
+            is_pano_shot = True
+            shot_from_json(reconstruction, key, value, is_pano_shot)
 
     # Extract main and unit shots
     if 'main_shot' in obj:
@@ -202,6 +196,20 @@ def camera_to_json(camera):
             'k1': camera.k1,
             'k2': camera.k2,
         }
+    elif camera.projection_type == 'fisheye_opencv':
+        return {
+            'projection_type': camera.projection_type,
+            'width': camera.width,
+            'height': camera.height,
+            'focal_x': camera.focal,
+            'focal_y': camera.focal*camera.aspect_ratio,
+            'c_x': camera.principal_point[0],
+            'c_y': camera.principal_point[1],
+            'k1': camera.k1,
+            'k2': camera.k2,
+            'k3': camera.k3,
+            'k4': camera.k4,
+        }
     elif camera.projection_type == 'dual':
         return {
             'projection_type': camera.projection_type,
@@ -231,24 +239,12 @@ def shot_to_json(shot):
         'translation': list(shot.pose.translation),
         'camera': shot.camera.id
     }
+
     if shot.metadata is not None:
-        if shot.metadata.orientation is not None:
-            obj['orientation'] = shot.metadata.orientation
-        if shot.metadata.capture_time is not None:
-            obj['capture_time'] = shot.metadata.capture_time
-        if shot.metadata.gps_dop is not None:
-            obj['gps_dop'] = shot.metadata.gps_dop
-        if shot.metadata.gps_position is not None:
-            obj['gps_position'] = shot.metadata.gps_position
-        if shot.metadata.accelerometer is not None:
-            obj['accelerometer'] = shot.metadata.accelerometer
-        if shot.metadata.compass is not None:
-            obj['compass'] = shot.metadata.compass
-        if shot.metadata.skey is not None:
-            obj['skey'] = shot.metadata.skey
+        obj.update(pymap_metadata_to_json(shot.metadata))
     if shot.mesh is not None:
-        obj['vertices'] = shot.mesh.vertices
-        obj['faces'] = shot.mesh.faces
+        obj['vertices'] = [list(vertice) for vertice in shot.mesh.vertices]
+        obj['faces'] = [list(face) for face in shot.mesh.faces]
     if hasattr(shot, 'scale'):
         obj['scale'] = shot.scale
     if hasattr(shot, 'covariance'):
@@ -258,12 +254,60 @@ def shot_to_json(shot):
     return obj
 
 
+def pymap_metadata_to_json(metadata):
+    obj = {}
+    if metadata.orientation.has_value:
+        obj['orientation'] = metadata.orientation.value
+    if metadata.capture_time.has_value:
+        obj['capture_time'] = metadata.capture_time.value
+    if metadata.gps_accuracy.has_value:
+        obj['gps_dop'] = metadata.gps_accuracy.value
+    if metadata.gps_position.has_value:
+        obj['gps_position'] = list(metadata.gps_position.value)
+    if metadata.accelerometer.has_value:
+        obj['accelerometer'] = list(metadata.accelerometer.value)
+    if metadata.compass_angle.has_value and metadata.compass_accuracy.has_value:
+        obj['compass'] = {"angle": metadata.compass_angle.value,
+                          "accuracy": metadata.compass_accuracy.value}
+    else:
+        if metadata.compass_angle.has_value:
+            obj['compass'] = {"angle": metadata.compass_angle.value}
+        elif metadata.compass_accuracy.has_value:
+            obj['compass'] = {"accuracy": metadata.compass_accuracy.value}
+    if metadata.sequence_key.has_value:
+        obj['skey'] = metadata.sequence_key.value
+    return obj
+
+
+def json_to_pymap_metadata(obj):
+    metadata = pymap.ShotMeasurements()
+    if obj.get("orientation") is not None:
+        metadata.orientation.value = obj.get("orientation")
+    if obj.get("capture_time") is not None:
+        metadata.capture_time.value = obj.get("capture_time")
+    if obj.get("gps_dop") is not None:
+        metadata.gps_accuracy.value = obj.get("gps_dop")
+    if obj.get("gps_position") is not None:
+        metadata.gps_position.value = obj.get("gps_position")
+    if obj.get("skey") is not None:
+        metadata.sequence_key.value = obj.get("skey")
+    if obj.get("accelerometer") is not None:
+        metadata.accelerometer.value = obj.get("accelerometer")
+    if obj.get("compass") is not None:
+        compass = obj.get("compass")
+        if "angle" in compass:
+            metadata.compass_angle.value = compass['angle']
+        if "accuracy" in compass:
+            metadata.compass_accuracy.value = compass['accuracy']
+    return metadata
+
+
 def point_to_json(point):
     """
     Write a point to a json object
     """
     return {
-        'color': list(point.color),
+        'color': list(point.color.astype(float)),
         'coordinates': list(point.coordinates)
     }
 
@@ -292,9 +336,10 @@ def reconstruction_to_json(reconstruction):
 
     # Extract pano_shots
     if hasattr(reconstruction, 'pano_shots'):
-        obj['pano_shots'] = {}
-        for shot in reconstruction.pano_shots.values():
-            obj['pano_shots'][shot.id] = shot_to_json(shot)
+        if len(reconstruction.pano_shots) > 0:
+            obj['pano_shots'] = {}
+            for shot in reconstruction.pano_shots.values():
+                obj['pano_shots'][shot.id] = shot_to_json(shot)
 
     # Extract main and unit shots
     if hasattr(reconstruction, 'main_shot'):
@@ -520,80 +565,6 @@ def open_rt(path):
     return io.open(path, 'r', encoding='utf-8')
 
 
-def _json_dump_python_2_pached(
-        obj, fp, skipkeys=False, ensure_ascii=True, check_circular=True,
-        allow_nan=True, cls=None, indent=None, separators=None,
-        encoding='utf-8', default=None, sort_keys=False, **kw):
-    """Serialize ``obj`` as a JSON formatted stream to ``fp`` (a
-    ``.write()``-supporting file-like object).
-
-    If ``skipkeys`` is true then ``dict`` keys that are not basic types
-    (``str``, ``unicode``, ``int``, ``long``, ``float``, ``bool``, ``None``)
-    will be skipped instead of raising a ``TypeError``.
-
-    If ``ensure_ascii`` is true (the default), all non-ASCII characters in the
-    output are escaped with ``\\uXXXX`` sequences, and the result is a ``str``
-    instance consisting of ASCII characters only.  If ``ensure_ascii`` is
-    ``False``, some chunks written to ``fp`` may be ``unicode`` instances.
-    This usually happens because the input contains unicode strings or the
-    ``encoding`` parameter is used. Unless ``fp.write()`` explicitly
-    understands ``unicode`` (as in ``codecs.getwriter``) this is likely to
-    cause an error.
-
-    If ``check_circular`` is false, then the circular reference check
-    for container types will be skipped and a circular reference will
-    result in an ``OverflowError`` (or worse).
-
-    If ``allow_nan`` is false, then it will be a ``ValueError`` to
-    serialize out of range ``float`` values (``nan``, ``inf``, ``-inf``)
-    in strict compliance of the JSON specification, instead of using the
-    JavaScript equivalents (``NaN``, ``Infinity``, ``-Infinity``).
-
-    If ``indent`` is a non-negative integer, then JSON array elements and
-    object members will be pretty-printed with that indent level. An indent
-    level of 0 will only insert newlines. ``None`` is the most compact
-    representation.  Since the default item separator is ``', '``,  the
-    output might include trailing whitespace when ``indent`` is specified.
-    You can use ``separators=(',', ': ')`` to avoid this.
-
-    If ``separators`` is an ``(item_separator, dict_separator)`` tuple
-    then it will be used instead of the default ``(', ', ': ')`` separators.
-    ``(',', ':')`` is the most compact JSON representation.
-
-    ``encoding`` is the character encoding for str instances, default is UTF-8.
-
-    ``default(obj)`` is a function that should return a serializable version
-    of obj or raise TypeError. The default simply raises TypeError.
-
-    If *sort_keys* is ``True`` (default: ``False``), then the output of
-    dictionaries will be sorted by key.
-
-    To use a custom ``JSONEncoder`` subclass (e.g. one that overrides the
-    ``.default()`` method to serialize additional types), specify it with
-    the ``cls`` kwarg; otherwise ``JSONEncoder`` is used.
-
-    """
-    # cached encoder
-    if (not skipkeys and ensure_ascii and
-            check_circular and allow_nan and
-            cls is None and indent is None and separators is None and
-            encoding == 'utf-8' and default is None and not sort_keys and
-            not kw):
-        iterable = json._default_encoder.iterencode(obj)
-    else:
-        if cls is None:
-            cls = json.JSONEncoder
-        iterable = cls(
-            skipkeys=skipkeys, ensure_ascii=ensure_ascii,
-            check_circular=check_circular, allow_nan=allow_nan, indent=indent,
-            separators=separators, encoding=encoding,
-            default=default, sort_keys=sort_keys, **kw).iterencode(obj)
-    # could accelerate with writelines in some versions of Python, at
-    # a debuggability cost
-    for chunk in iterable:
-        fp.write(unicode(chunk))  # Convert chunks to unicode before writing
-
-
 def json_dump_kwargs(minify=False):
     if minify:
         indent, separators = None, (',', ':')
@@ -605,24 +576,14 @@ def json_dump_kwargs(minify=False):
 
 def json_dump(data, fout, minify=False):
     kwargs = json_dump_kwargs(minify)
-    if sys.version_info >= (3, 0):
-        return json.dump(data, fout, **kwargs)
-    else:
-        # Python 2 json decoders can unpredictably return str or unicode
-        # We use a patched json.dump function to always convert to unicode
-        # See https://bugs.python.org/issue13769
-        return _json_dump_python_2_pached(data, fout, **kwargs)
+    assert sys.version_info >= (3, 0)
+    return json.dump(data, fout, **kwargs)
 
 
 def json_dumps(data, minify=False):
     kwargs = json_dump_kwargs(minify)
-    if sys.version_info >= (3, 0):
-        return json.dumps(data, **kwargs)
-    else:
-        # Python 2 json decoders can unpredictably return str or unicode.
-        # We use always convert to unicode
-        # See https://bugs.python.org/issue13769
-        return unicode(json.dumps(data, **kwargs))
+    assert sys.version_info >= (3, 0)
+    return json.dumps(data, **kwargs)
 
 
 def json_load(fp):
@@ -650,7 +611,7 @@ def imread(filename, grayscale=False, unchanged=False, anydepth=False):
                 "OpenCV version {} does not support loading images without "
                 "rotating them according to EXIF. Please upgrade OpenCV to "
                 "version 3.2 or newer.".format(cv2.__version__))
-        
+
         if anydepth:
             flags |= cv2.IMREAD_ANYDEPTH
     else:
@@ -687,7 +648,7 @@ def image_size(filename):
         with Image.open(filename) as img:
             width, height = img.size
             return height, width
-    except:
+    except Exception:
         # Slower fallback
         image = imread(filename)
         return image.shape[:2]
@@ -719,7 +680,7 @@ def export_bundler(image_list, reconstructions, track_manager,
             if shot_id in shots:
                 shot = shots[shot_id]
                 camera = shot.camera
-                if type(camera) == types.BrownPerspectiveCamera:
+                if shot.camera.projection_type == "brown":
                     # Will aproximate Brown model, not optimal
                     focal_normalized = camera.focal_x
                 else:
@@ -738,11 +699,11 @@ def export_bundler(image_list, reconstructions, track_manager,
                 t = ' '.join(map(str, t))
                 lines.append(t)
             else:
-                for i in range(5):
+                for _ in range(5):
                     lines.append("0 0 0")
 
         # tracks
-        for point_id, point in iteritems(points):
+        for point in points.values():
             coord = point.coordinates
             color = list(map(int, point.color))
             view_list = track_manager.get_track_observations(point.id)
@@ -836,14 +797,11 @@ def import_bundler(data_path, bundle_file, list_file, track_file,
             t = np.array(list(map(float, t)))
             R[1], R[2] = -R[1], -R[2]  # Reverse y and z
             t[1], t[2] = -t[1], -t[2]
+            pose = pygeometry.Pose()
+            pose.set_rotation_matrix(R)
+            pose.translation = t
 
-            shot = types.Shot()
-            shot.id = shot_key
-            shot.camera = camera
-            shot.pose = types.Pose()
-            shot.pose.set_rotation_matrix(R)
-            shot.pose.translation = t
-            reconstruction.add_shot(shot)
+            reconstruction.create_shot(shot_key, camera.id, pose)
         else:
             logger.warning('ignoring failed image {}'.format(shot_key))
         offset += 5
@@ -853,11 +811,8 @@ def import_bundler(data_path, bundle_file, list_file, track_file,
     for i in range(num_point):
         coordinates = lines[offset].rstrip('\n').split(' ')
         color = lines[offset + 1].rstrip('\n').split(' ')
-        point = types.Point()
-        point.id = i
-        point.coordinates = list(map(float, coordinates))
+        point = reconstruction.create_point(i, list(map(float, coordinates)))
         point.color = list(map(int, color))
-        reconstruction.add_point(point)
 
         view_line = lines[offset + 2].rstrip('\n').split(' ')
 
