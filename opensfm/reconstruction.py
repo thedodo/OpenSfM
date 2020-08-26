@@ -1334,67 +1334,67 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     localize_dict = {} 
     if(localize):
         #Localize each image.
-        reconstruction = data.load_reconstruction()[0]
-        print("reconstruction: ", reconstruction)
-        for im in remaining_images:
-            candidates = reconstructed_points_for_images(tracks_manager, reconstruction, [im], True)
-            if not candidates:
-                break
-            logger.info("-------------------------------------------------------")
-            threshold = data.config['resection_threshold']
-            min_inliers = data.config['resection_min_inliers']
-            for image, num_tracks in candidates:
-                shot_data_dict = {}
-                camera = reconstruction.cameras[data.load_exif(image)['camera']]
-                print("Exif of ", image, " :", camera)
-                metadata = get_image_metadata(data, image)
-                reference = data.load_reference()
-                ok, resrep = resect(tracks_manager, reconstruction, image,
-                                    camera, metadata, threshold, min_inliers, True, reference)
-                if not ok:
-                    continue
-                bundle_single_view(reconstruction, image,
-                                camera_priors, data.config)
-                shot = reconstruction.shots[image]
+        for reconstruction in data.load_reconstruction():     
+            # print("reconstruction: ", reconstruction)
+            for im in remaining_images:
+                candidates = reconstructed_points_for_images(tracks_manager, reconstruction, [im], True)
+                if not candidates:
+                    break
+                logger.info("-------------------------------------------------------")
+                threshold = data.config['resection_threshold']
+                min_inliers = data.config['resection_min_inliers']
+                for image, num_tracks in candidates:
+                    shot_data_dict = {}
+                    camera = reconstruction.cameras[data.load_exif(image)['camera']]
+                    print("Exif of ", image, " :", camera)
+                    metadata = get_image_metadata(data, image)
+                    reference = data.load_reference()
+                    ok, resrep = resect(tracks_manager, reconstruction, image,
+                                        camera, metadata, threshold, min_inliers, True, reference)
+                    if not ok:
+                        continue
+                    bundle_single_view(reconstruction, image,
+                                    camera_priors, data.config)
+                    shot = reconstruction.shots[image]
 
-                logger.info("Localized image {0}".format(image))
+                    logger.info("Localized image {0}".format(image))
 
-                print("Shot ", image, " rotation :", shot.pose.rotation)
-                print("Shot ", image, " translation :", shot.pose.translation)
-                shot_data_dict['rotation'] = shot.pose.rotation.tolist()
-                shot_data_dict['translation'] = shot.pose.translation.tolist()
-                
-                if(not(reference is None)):
-                    t = shot.pose.translation
-                    gps = reference.to_lla(t[0], t[1], t[2])
-                    print("GPS of translation is: ", gps)
-                    shot_data_dict['gps'] = gps
-                
-                localize_dict[im] = shot_data_dict
-                remaining_images.remove(image)
+                    print("Shot ", image, " rotation :", shot.pose.rotation)
+                    print("Shot ", image, " translation :", shot.pose.translation)
+                    shot_data_dict['rotation'] = shot.pose.rotation.tolist()
+                    shot_data_dict['translation'] = shot.pose.translation.tolist()
+                    
+                    if(not(reference is None)):
+                        t = shot.pose.translation
+                        gps = reference.to_lla(t[0], t[1], t[2])
+                        print("GPS of translation is: ", gps)
+                        shot_data_dict['gps'] = gps
+                    
+                    localize_dict[im] = shot_data_dict
+                    remaining_images.remove(image)
 
-                #Clean up images after localization. 
-                image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")
-                image_feature_path = os.path.join(data.data_path, "features", image + ".features.npz")
-                image_matches_path = os.path.join(data.data_path, "matches", image + "_matches.pkl.gz")
-                if(os.path.exists(image_metadata_path)):
-                    os.remove(image_metadata_path)
-                    print("Removed: ", image_metadata_path)
-                if(os.path.exists(image_feature_path)):
-                    os.remove(image_feature_path)
-                    print("Removed: ", image_feature_path)
-                if(os.path.exists(image_matches_path)):
-                    os.remove(image_matches_path)
-                    print("Removed: ", image_matches_path)
+                    #Clean up images after localization. 
+                    image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")
+                    image_feature_path = os.path.join(data.data_path, "features", image + ".features.npz")
+                    image_matches_path = os.path.join(data.data_path, "matches", image + "_matches.pkl.gz")
+                    if(os.path.exists(image_metadata_path)):
+                        os.remove(image_metadata_path)
+                        print("Removed: ", image_metadata_path)
+                    if(os.path.exists(image_feature_path)):
+                        os.remove(image_feature_path)
+                        print("Removed: ", image_feature_path)
+                    if(os.path.exists(image_matches_path)):
+                        os.remove(image_matches_path)
+                        print("Removed: ", image_matches_path)
 
-            # for im1, im2 in pairs:
-            #     if(im1 != im):
-            #         continue 
-            #     print("Doing ", im1, " and ", im2)
-        print("localize dict = ", localize_dict)
-        with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
-            json.dump(localize_dict, fp)
-    
+                # for im1, im2 in pairs:
+                #     if(im1 != im):
+                #         continue 
+                #     print("Doing ", im1, " and ", im2)
+            print("localize dict = ", localize_dict)
+            with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
+                json.dump(localize_dict, fp)
+        
     else:
         for im1, im2 in pairs:
             print("Doing ", im1, " and ", im2)
