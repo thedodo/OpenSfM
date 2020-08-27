@@ -147,11 +147,12 @@ def bundle(reconstruction, camera_priors, gcp, config):
     ba.set_internal_parameters_prior_sd(
         config['exif_focal_sd'],
         config['principal_point_sd'],
-        config['radial_distorsion_k1_sd'],
-        config['radial_distorsion_k2_sd'],
-        config['radial_distorsion_p1_sd'],
-        config['radial_distorsion_p2_sd'],
-        config['radial_distorsion_k3_sd'])
+        config['radial_distortion_k1_sd'],
+        config['radial_distortion_k2_sd'],
+        config['tangential_distortion_p1_sd'],
+        config['tangential_distortion_p2_sd'],
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(config['bundle_max_iterations'])
     ba.set_linear_solver_type("SPARSE_SCHUR")
@@ -214,11 +215,12 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
     ba.set_internal_parameters_prior_sd(
         config['exif_focal_sd'],
         config['principal_point_sd'],
-        config['radial_distorsion_k1_sd'],
-        config['radial_distorsion_k2_sd'],
-        config['radial_distorsion_p1_sd'],
-        config['radial_distorsion_p2_sd'],
-        config['radial_distorsion_k3_sd'])
+        config['radial_distortion_k1_sd'],
+        config['radial_distortion_k2_sd'],
+        config['tangential_distortion_p1_sd'],
+        config['tangential_distortion_p2_sd'],
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")
@@ -302,11 +304,12 @@ def bundle_local(reconstruction, camera_priors, gcp, central_shot_id, config):
     ba.set_internal_parameters_prior_sd(
         config['exif_focal_sd'],
         config['principal_point_sd'],
-        config['radial_distorsion_k1_sd'],
-        config['radial_distorsion_k2_sd'],
-        config['radial_distorsion_p1_sd'],
-        config['radial_distorsion_p2_sd'],
-        config['radial_distorsion_k3_sd'])
+        config['radial_distortion_k1_sd'],
+        config['radial_distortion_k2_sd'],
+        config['tangential_distortion_p1_sd'],
+        config['tangential_distortion_p2_sd'],
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(10)
     ba.set_linear_solver_type("DENSE_SCHUR")
@@ -355,7 +358,7 @@ def shot_neighborhood(reconstruction, central_shot_id, radius,
     """
     max_boundary_size = 1000000
     interior = set([central_shot_id])
-    for distance in range(1, radius):
+    for _distance in range(1, radius):
         remaining = max_interior_size - len(interior)
         if remaining <= 0:
             break
@@ -421,7 +424,7 @@ def compute_image_pairs(track_dict, cameras, data):
 def _pair_reconstructability_arguments(track_dict, cameras, data):
     threshold = 4 * data.config['five_point_algo_threshold']
     args = []
-    for (im1, im2), (tracks, p1, p2) in iteritems(track_dict):
+    for (im1, im2), (_, p1, p2) in track_dict.items():
         camera1 = cameras[data.load_exif(im1)['camera']]
         camera2 = cameras[data.load_exif(im2)['camera']]
         args.append((im1, im2, p1, p2, camera1, camera2, threshold))
@@ -463,7 +466,7 @@ def get_image_metadata(data, image):
     metadata.orientation.value = exif.get('orientation', 1)
 
     if 'accelerometer' in exif:
-        metadata.accelerometer = exif['accelerometer']
+        metadata.accelerometer.value = exif['accelerometer']
 
     if 'compass' in exif:
         metadata.compass_angle.value = exif['compass']['angle']
@@ -527,7 +530,7 @@ def two_view_reconstruction_plane_based(p1, p2, camera1, camera2, threshold):
         return None, None, []
 
     motion_inliers = []
-    for R, t, n, d in motions:
+    for R, t, _, _ in motions:
         inliers = _two_view_reconstruction_inliers(
             b1, b2, R.T, -R.T.dot(t), threshold)
         motion_inliers.append(inliers)
@@ -1043,13 +1046,16 @@ def remove_outliers(reconstruction, config, points=None):
             if error_sqr > threshold_sqr:
                 outliers.append((point_id, shot_id))
 
+    track_ids = set()
     for track, shot_id in outliers:
         reconstruction.map.remove_observation(shot_id, track)
+        track_ids.add(track)
 
-    for track, _ in outliers:
-        lm = reconstruction.points[track]
-        if lm is not None and lm.number_of_observations() < 2:
-            reconstruction.map.remove_landmark(lm)
+    for track in track_ids:
+        if track in reconstruction.points:
+            lm = reconstruction.points[track]
+            if lm.number_of_observations() < 2:
+                reconstruction.map.remove_landmark(lm)
 
     logger.info("Removed outliers: {}".format(len(outliers)))
     return len(outliers)
@@ -1199,8 +1205,7 @@ def grow_reconstruction(data, tracks_manager, reconstruction, images, camera_pri
         logger.info("-------------------------------------------------------")
         threshold = data.config['resection_threshold']
         min_inliers = data.config['resection_min_inliers']
-        for image, num_tracks in candidates:
-            print("candidate :", image)
+        for image, _ in candidates:
             camera = reconstruction.cameras[data.load_exif(image)['camera']]
             metadata = get_image_metadata(data, image)
             ok, resrep = resect(tracks_manager, reconstruction, image,
