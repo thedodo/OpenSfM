@@ -25,6 +25,8 @@ from opensfm.align import align_reconstruction, apply_similarity
 from opensfm.context import parallel_map, current_memory_usage
 from opensfm import pymap
 
+import json 
+import os 
 logger = logging.getLogger(__name__)
 
 
@@ -149,8 +151,8 @@ def bundle(reconstruction, camera_priors, gcp, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'],
-        config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'])
+        # config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(config['bundle_max_iterations'])
     ba.set_linear_solver_type("SPARSE_SCHUR")
@@ -217,10 +219,10 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'],
-        config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'])
+        # config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
-    ba.set_max_num_iterations(10)
+    ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")
 
     ba.run()
@@ -230,6 +232,10 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
     s = ba.get_shot(shot_id)
     shot.pose.rotation = [s.r[0], s.r[1], s.r[2]]
     shot.pose.translation = [s.t[0], s.t[1], s.t[2]]
+
+    # print("Shot ", shot_id, " rotation :", shot.pose.rotation)
+    # print("Shot ", shot_id, " translation :", shot.pose.translation)
+
 
 
 def bundle_local(reconstruction, camera_priors, gcp, central_shot_id, config):
@@ -691,21 +697,27 @@ def bootstrap_reconstruction(data, tracks_manager, camera_priors, im1, im2, p1, 
     return reconstruction, report
 
 
-def reconstructed_points_for_images(tracks_manager, reconstruction, images):
+def reconstructed_points_for_images(tracks_manager, reconstruction, images, localize=False):
     """Number of reconstructed points visible on each image.
 
     Returns:
         A list of (image, num_point) pairs sorted by decreasing number
         of points.
     """
+    # print("Reconstruction shots: ", reconstruction.shots)
+    # if(localize):
+    #     non_reconstructed = images
+    # else:
     non_reconstructed = [im for im in images if im not in reconstruction.shots]
+    print("Non Reconstructed", non_reconstructed)
     res = pysfm.count_tracks_per_shot(
         tracks_manager, non_reconstructed, list(reconstruction.points.keys()))
+    print("Res = ", res)
     return sorted(res.items(), key=lambda x: -x[1])
 
 
 def resect(tracks_manager, reconstruction, shot_id,
-           camera, metadata, threshold, min_inliers):
+           camera, metadata, threshold, min_inliers, localize=False, reference=None):
     """Try resecting and adding a shot to the reconstruction.
 
     Return:
@@ -721,6 +733,7 @@ def resect(tracks_manager, reconstruction, shot_id,
             ids.append(track)
     bs = np.array(bs)
     Xs = np.array(Xs)
+
     if len(bs) < 5:
         return False, {'num_common_points': len(bs)}
 
@@ -742,14 +755,23 @@ def resect(tracks_manager, reconstruction, shot_id,
         'num_common_points': len(bs),
         'num_inliers': ninliers,
     }
+    
+    if(localize):
+        min_inliers = 3
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
+        print("Rotation = ", R)
+        print("Translation = ", t)
+        # if(not(localize)):
         shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
         shot.metadata = metadata
         for i, succeed in enumerate(inliers):
             if succeed:
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+        # if(not(reference is None)):
+        #     gps = reference.to_lla(t[0], t[1], t[2])
+        #     print("GPS of translation is: ", gps)
         return True, report
     else:
         return False, report
@@ -1176,22 +1198,14 @@ def grow_reconstruction(data, tracks_manager, reconstruction, images, camera_pri
     should_bundle = ShouldBundle(data, reconstruction)
     should_retriangulate = ShouldRetriangulate(data, reconstruction)
     while True:
-        if config['save_partial_reconstructions']:
-            paint_reconstruction(data, tracks_manager, reconstruction)
-            data.save_reconstruction(
-                [reconstruction], 'reconstruction.{}.json'.format(
-                    datetime.datetime.now().isoformat().replace(':', '_')))
-
         candidates = reconstructed_points_for_images(
             tracks_manager, reconstruction, images)
         if not candidates:
             break
-
         logger.info("-------------------------------------------------------")
         threshold = data.config['resection_threshold']
         min_inliers = data.config['resection_min_inliers']
         for image, _ in candidates:
-
             camera = reconstruction.cameras[data.load_exif(image)['camera']]
             metadata = get_image_metadata(data, image)
             ok, resrep = resect(tracks_manager, reconstruction, image,
@@ -1286,45 +1300,127 @@ def compute_statistics(reconstruction):
     return stats
 
 
-def incremental_reconstruction(data, tracks_manager):
+def incremental_reconstruction(data, tracks_manager,localize=False):
     """Run the entire incremental reconstruction pipeline."""
     logger.info("Starting incremental reconstruction")
     report = {}
     chrono = Chronometer()
 
     images = tracks_manager.get_shot_ids()
-
-    if not data.reference_lla_exists():
-        data.invent_reference_lla(images)
-
     remaining_images = set(images)
+
+    try:
+        existing_reconstructions = data.load_reconstruction()
+    except IOError:
+        existing_reconstructions = []
+
+    if(localize):
+        loc_path = os.path.join(data.data_path, "localize")
+        remaining_images = [im for im in os.listdir(loc_path) if im.endswith(".jpg")]
+
+    print("Remaining Images: ", remaining_images)
+    
     camera_priors = data.load_camera_models()
     gcp = data.load_ground_control_points()
-    common_tracks = tracking.all_common_tracks(tracks_manager)
+    
+    if(localize):
+        common_tracks = tracking.all_common_tracks(tracks_manager,rem_images=remaining_images)
+    
+    else: 
+        common_tracks = tracking.all_common_tracks(tracks_manager)
+    
     reconstructions = []
     pairs = compute_image_pairs(common_tracks, camera_priors, data)
     chrono.lap('compute_image_pairs')
     report['num_candidate_image_pairs'] = len(pairs)
     report['reconstructions'] = []
-    for im1, im2 in pairs:
-        if im1 in remaining_images and im2 in remaining_images:
-            rec_report = {}
-            report['reconstructions'].append(rec_report)
-            _, p1, p2 = common_tracks[im1, im2]
-            reconstruction, rec_report['bootstrap'] = bootstrap_reconstruction(
-                data, tracks_manager, camera_priors, im1, im2, p1, p2)
 
-            if reconstruction:
-                remaining_images.remove(im1)
-                remaining_images.remove(im2)
-                reconstruction, rec_report['grow'] = grow_reconstruction(
-                    data, tracks_manager, reconstruction, remaining_images, camera_priors, gcp)
-                reconstructions.append(reconstruction)
-                reconstructions = sorted(reconstructions,
-                                         key=lambda x: -len(x.shots))
-                rec_report['stats'] = compute_statistics(reconstruction)
-                logger.info(rec_report['stats'])
+    print(pairs)
+    localize_dict = {} 
+    if(localize):
+        #Localize each image.
+        for reconstruction in data.load_reconstruction():     
+            # print("reconstruction: ", reconstruction)
+            for im in remaining_images:
+                candidates = reconstructed_points_for_images(tracks_manager, reconstruction, [im], True)
+                if not candidates:
+                    break
+                logger.info("-------------------------------------------------------")
+                threshold = data.config['resection_threshold']
+                min_inliers = data.config['resection_min_inliers']
+                for image, num_tracks in candidates:
+                    shot_data_dict = {}
+                    camera = reconstruction.cameras[data.load_exif(image)['camera']]
+                    print("Exif of ", image, " :", camera)
+                    metadata = get_image_metadata(data, image)
+                    reference = data.load_reference()
+                    ok, resrep = resect(tracks_manager, reconstruction, image,
+                                        camera, metadata, threshold, min_inliers, True, reference)
+                    if not ok:
+                        continue
+                    bundle_single_view(reconstruction, image,
+                                    camera_priors, data.config)
+                    shot = reconstruction.shots[image]
 
+                    logger.info("Localized image {0}".format(image))
+
+                    print("Shot ", image, " rotation :", shot.pose.rotation)
+                    print("Shot ", image, " translation :", shot.pose.translation)
+                    shot_data_dict['rotation'] = shot.pose.rotation.tolist()
+                    shot_data_dict['translation'] = shot.pose.translation.tolist()
+                    
+                    if(not(reference is None)):
+                        t = shot.pose.translation
+                        gps = reference.to_lla(t[0], t[1], t[2])
+                        print("GPS of translation is: ", gps)
+                        shot_data_dict['gps'] = gps
+                    
+                    localize_dict[im] = shot_data_dict
+                    remaining_images.remove(image)
+
+                    #Clean up images after localization. 
+                    image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")
+                    image_feature_path = os.path.join(data.data_path, "features", image + ".features.npz")
+                    image_matches_path = os.path.join(data.data_path, "matches", image + "_matches.pkl.gz")
+                    if(os.path.exists(image_metadata_path)):
+                        os.remove(image_metadata_path)
+                        print("Removed: ", image_metadata_path)
+                    if(os.path.exists(image_feature_path)):
+                        os.remove(image_feature_path)
+                        print("Removed: ", image_feature_path)
+                    if(os.path.exists(image_matches_path)):
+                        os.remove(image_matches_path)
+                        print("Removed: ", image_matches_path)
+
+                # for im1, im2 in pairs:
+                #     if(im1 != im):
+                #         continue 
+                #     print("Doing ", im1, " and ", im2)
+            print("localize dict = ", localize_dict)
+            with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
+                json.dump(localize_dict, fp)
+        
+    else:
+        for im1, im2 in pairs:
+            print("Doing ", im1, " and ", im2)
+            if (im1 in remaining_images and im2 in remaining_images) or localize:
+                rec_report = {}
+                report['reconstructions'].append(rec_report)
+                _, p1, p2 = common_tracks[im1, im2]
+                reconstruction, rec_report['bootstrap'] = bootstrap_reconstruction(
+                    data, tracks_manager, camera_priors, im1, im2, p1, p2)
+
+                if reconstruction:
+                    remaining_images.remove(im1)
+                    remaining_images.remove(im2)
+                    reconstruction, rec_report['grow'] = grow_reconstruction(
+                        data, tracks_manager, reconstruction, remaining_images, camera_priors, gcp)
+                    reconstructions.append(reconstruction)
+                    reconstructions = sorted(reconstructions,
+                                            key=lambda x: -len(x.shots))
+                    rec_report['stats'] = compute_statistics(reconstruction)
+                    logger.info(rec_report['stats'])
+            
     for k, r in enumerate(reconstructions):
         logger.info("Reconstruction {}: {} images, {} points".format(
             k, len(r.shots), len(r.points)))

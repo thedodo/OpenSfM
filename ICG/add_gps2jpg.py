@@ -12,7 +12,11 @@ from fractions import Fraction
 
 #Ordner mit Bildern sowie einem CVS file mit den GPS Koordinaten
 
+<<<<<<< HEAD
 folder = '/home/dominik/SV4VI/Experimental/OpenSfM/data/Graz/1594898311.9886508/'
+=======
+folder = '/home/dominik/SV4VI/Experimental/OpenSfM/data/Graz/1594893635.0159063/'
+>>>>>>> localize_upstream
 im_list = glob.glob(folder + '*.jpg')
 gps_file = glob.glob(folder + '*.csv')
 
