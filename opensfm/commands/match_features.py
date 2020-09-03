@@ -9,6 +9,7 @@ from opensfm import log
 from opensfm import matching
 from opensfm import pairs_selection
 from opensfm.context import parallel_map
+import os 
 
 
 logger = logging.getLogger(__name__)
@@ -19,14 +20,23 @@ class Command:
 
     def add_arguments(self, parser):
         parser.add_argument('dataset', help='dataset to process')
+        # parser.add_argument('--localize', default=False, action="store_true")
 
     def run(self, args):
         data = dataset.DataSet(args.dataset)
-        images = data.images()
+        queryImages = None
+        if(args.localize):
+            localizeDir = os.path.join(args.dataset, "localize")
+            print("Localization - creating matches: ")
+            queryImages = [x for x in os.listdir(localizeDir) if x.endswith(".jpg")]
+            [print(os.path.join(localizeDir, str(x))) for x in queryImages]
+        
+        else:
+            queryImages = data.images()
 
         start = timer()
-        pairs_matches, preport = matching.match_images(data, images, images) #TODO: 2nd Argument, cand_images, will be those images that are query. 
-        matching.save_matches(data, images, pairs_matches)
+        pairs_matches, preport = matching.match_images(data, queryImages, data.images()) #2nd Argument, ref_images will be those images that are query. 
+        matching.save_matches(data, queryImages, pairs_matches)
         end = timer()
 
         with open(data.profile_log(), 'a') as fout:

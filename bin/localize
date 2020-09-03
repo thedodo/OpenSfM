@@ -7,14 +7,17 @@ PYTHON=${2:-python3}
 
 echo "Running using Python command: $PYTHON"
 
-#Remove all files in $1 which were copied from $2 in a previous run.
-find $1 -type f |awk -F "/" '{print $NF}'   > /var/tmp/P1_file.txt
-find $2 -type f |awk -F "/" '{print $NF}'   > /var/tmp/P2_file.txt
-awk 'NR==FNR {a[$1];next}($1 in a) {print $1}' /var/tmp/P1_file.txt /var/tmp/P2_file.txt  |awk '{print "rm -rvf" " " "/root/p1/"$1}' | sh
+# #Remove all files in $1 which were copied from $2 in a previous run.
+# find $1/images/ -type f |awk -F "/" '{print $NF}'   > /var/tmp/P1_file.txt
+# find $1/localize/ -type f |awk -F "/" '{print $NF}'   > /var/tmp/P2_file.txt
+# awk 'NR==FNR {a[$1];next}($1 in a) {print $1}' /var/tmp/P1_file.txt /var/tmp/P2_file.txt  |awk '{print "rm -rvf" " " "/root/p1/"$1}' | sh
 
-#Copy over to data/whatever/images to start localization.
-cp $2/*.jpg $1/
+# #Copy over to data/whatever/images to start localization.
+cp $1/localize/*.jpg $1/images/
 
 $PYTHON $DIR/opensfm extract_metadata $1
 $PYTHON $DIR/opensfm detect_features $1
+$PYTHON $DIR/opensfm match_features $1 --localize 
+$PYTHON $DIR/opensfm create_tracks $1 --localize 
+$PYTHON $DIR/opensfm reconstruct $1 --localize
 
