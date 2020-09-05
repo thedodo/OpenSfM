@@ -273,50 +273,50 @@ def getNormPos(campos):
 
 
 
-#To read pointcloud
-pcd = o3d.io.read_point_cloud('/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged_clean.ply')
+# #To read pointcloud
+# pcd = o3d.io.read_point_cloud('/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged_clean.ply')
 
-#Get bounds. 
-xyz = np.asarray(pcd.points)
-#FOR LATER USE
+# #Get bounds. 
+# xyz = np.asarray(pcd.points)
+# #FOR LATER USE
 
-colors = np.asarray(pcd.colors)
-
-
-bounds_min = np.amin(xyz, axis = 0)
-bounds_max = np.amax(xyz, axis=0)
-side_range = (bounds_min[1], bounds_max[1])
-fwd_range = (bounds_min[0] , bounds_max[0])
-height_range = (bounds_min[2], bounds_max[2])
-
-#flat_im = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
-
-#maybe not the best resolution? dynamically??
-#640x480 firm!!!
-flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (640,480), colors)
-
-campos = np.load('/home/dominik/Desktop/CAM_TEST/camera_points_2d.npy').astype(np.int32)
+# colors = np.asarray(pcd.colors)
 
 
-flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
+# bounds_min = np.amin(xyz, axis = 0)
+# bounds_max = np.amax(xyz, axis=0)
+# side_range = (bounds_min[1], bounds_max[1])
+# fwd_range = (bounds_min[0] , bounds_max[0])
+# height_range = (bounds_min[2], bounds_max[2])
 
-cv2.imwrite('/home/dominik/Desktop/CAM_TEST/test.jpeg', flat_im)
+# #flat_im = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
 
+# #maybe not the best resolution? dynamically??
+# #640x480 firm!!!
+# flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (640,480), colors)
 
-pcloud_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged.ply"
-reconstruction_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/"
-
-pcloud = o3d.io.read_point_cloud(pcloud_path)
-points = np.asarray(pcloud.points)
-
-print(points)
-
-get_camera2d(points, reconstruction_path)
-
-#campos_norm = getNormPos(campos)
-
-#np.save("/home/dominik/Desktop/CAM_TEST/camera_points_2d_norm.npy", campos_norm)    
+# campos = np.load('/home/dominik/Desktop/CAM_TEST/camera_points_2d.npy').astype(np.int32)
 
 
-#print(campos)
-#print(campos_norm)
+# flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
+
+# cv2.imwrite('/home/dominik/Desktop/CAM_TEST/test.jpeg', flat_im)
+
+
+# pcloud_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged.ply"
+# reconstruction_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/"
+
+# pcloud = o3d.io.read_point_cloud(pcloud_path)
+# points = np.asarray(pcloud.points)
+
+# print(points)
+
+# get_camera2d(points, reconstruction_path)
+
+# #campos_norm = getNormPos(campos)
+
+# #np.save("/home/dominik/Desktop/CAM_TEST/camera_points_2d_norm.npy", campos_norm)    
+
+
+# #print(campos)
+# #print(campos_norm)
