@@ -33,8 +33,8 @@ pip3 install exifread==2.1.2 \
 
              
 cd ..
-git submodule update --init --recursive
-git submodule update --recursive --remote
+sudo git submodule update --init --recursive
+#sudo git submodule update --recursive --remote
 sudo apt-get update \
     && apt-get install -y \
         build-essential \
@@ -58,24 +58,24 @@ sudo apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 mkdir source 
 cd source
-wget http://ceres-solver.org/ceres-solver-1.14.0.tar.gz
+sudo wget http://ceres-solver.org/ceres-solver-1.14.0.tar.gz
 tar -xf ceres-solver-1.14.0.tar.gz
 cd ceres-solver-1.14.0
-mkdir -p build
+sudo mkdir -p build
 cd build
-cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+sudo cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
 sudo make -j8 install
 cd ../..
 sudo rm -R ceres-solver-1.14.0
 git clone https://github.com/paulinus/opengv.git
 cd opengv/
 git submodule update --init --recursive
-mkdir -p build
+sudo mkdir -p build
 cd build
-cmake .. -DBUILD_PYTHON=ON -DPYBIND11_PYTHON_VERSION=3.6 -DPYTHON_INSTALL_DIR=/usr/local/lib/python3.6/dist-packages/
+sudo cmake .. -DBUILD_PYTHON=ON -DPYBIND11_PYTHON_VERSION=3.6 -DPYTHON_INSTALL_DIR=/usr/local/lib/python3.6/dist-packages/
 sudo make -j8 install
 cd ../../..
-python3 setup.py build
+sudo python3 setup.py build
 pip3 install repoze.lru
 pip3 install open3d
 pip3 install plyfile
