@@ -151,8 +151,8 @@ def bundle(reconstruction, camera_priors, gcp, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'])
-        # config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(config['bundle_max_iterations'])
     ba.set_linear_solver_type("SPARSE_SCHUR")
@@ -219,8 +219,8 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'])
-        # config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd']
+        ,config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")

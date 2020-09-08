@@ -34,6 +34,7 @@ pip3 install exifread==2.1.2 \
              
 cd ..
 git submodule update --init --recursive
+git submodule update --recursive
 sudo apt-get update \
     && apt-get install -y \
         build-essential \
@@ -76,18 +77,10 @@ sudo make -j8 install
 cd ../../..
 python3 setup.py build
 pip3 install repoze.lru
-<<<<<<< HEAD
-=======
 pip3 install open3d
 pip3 install plyfile
->>>>>>> localize_upstream
 sudo apt-get install build-essential
 sudo apt-get install python-all-dev
 sudo apt-get install libexiv2-dev
 sudo apt-get install libboost-python-dev
 pip3 install piexif
-<<<<<<< HEAD
-
-
-=======
->>>>>>> localize_upstream
