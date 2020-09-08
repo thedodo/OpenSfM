@@ -8,15 +8,14 @@ sudo apt-get install -y \
         libgoogle-glog-dev \
         libopencv-dev \
         libsuitesparse-dev \
-        python-dev \
-        python-numpy \
-        python-opencv \
-        python-pip \
-        python-pyexiv2 \
-        python-pyproj \
-        python-scipy \
-        python-yaml \
-        curl \
+        python3-dev \
+        python3-numpy \
+        python3-opencv \
+        python3-pip \
+        python3-pyproj \
+        python3-scipy \
+        python3-yaml \
+        curl \ vim \
     
 pip3 install exifread==2.1.2 \
                 gpxpy==1.1.2 \
@@ -29,33 +28,10 @@ pip3 install exifread==2.1.2 \
                 scipy \
                 xmltodict==0.10.2 \
                 cloudpickle==0.4.0 \
-                loky==1.2.1
+                loky
 
              
 cd ..
-sudo git submodule update --init --recursive
-#sudo git submodule update --recursive --remote
-sudo apt-get update \
-    && apt-get install -y \
-        build-essential \
-        cmake \
-        git \
-        libatlas-base-dev \
-        libeigen3-dev \
-        libgoogle-glog-dev \
-        libopencv-dev \
-        libsuitesparse-dev \
-        python-dev \
-        python-numpy \
-        python-opencv \
-        python-pip \
-        python-pyexiv2 \
-        python-pyproj \
-        python-scipy \
-        python-yaml \
-        curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 mkdir source 
 cd source
 sudo wget http://ceres-solver.org/ceres-solver-1.14.0.tar.gz
@@ -69,13 +45,13 @@ cd ../..
 sudo rm -R ceres-solver-1.14.0
 git clone https://github.com/paulinus/opengv.git
 cd opengv/
-git submodule update --init --recursive
-sudo mkdir -p build
+#git submodule update --init --recursive
+sudo mkdir build
 cd build
 sudo cmake .. -DBUILD_PYTHON=ON -DPYBIND11_PYTHON_VERSION=3.6 -DPYTHON_INSTALL_DIR=/usr/local/lib/python3.6/dist-packages/
 sudo make -j8 install
 cd ../../..
-sudo python3 setup.py build
+sudo python setup.py build
 pip3 install repoze.lru
 pip3 install open3d
 pip3 install plyfile
