@@ -34,6 +34,7 @@ pip3 install exifread==2.1.2 \
              
 cd ..
 git submodule update --init --recursive
+git submodule update --recursive --remote
 sudo apt-get update \
     && apt-get install -y \
         build-essential \
