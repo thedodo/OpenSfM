@@ -76,18 +76,10 @@ sudo make -j8 install
 cd ../../..
 python3 setup.py build
 pip3 install repoze.lru
-<<<<<<< HEAD
-=======
 pip3 install open3d
 pip3 install plyfile
->>>>>>> localize_upstream
 sudo apt-get install build-essential
 sudo apt-get install python-all-dev
 sudo apt-get install libexiv2-dev
 sudo apt-get install libboost-python-dev
 pip3 install piexif
-<<<<<<< HEAD
-
-
-=======
->>>>>>> localize_upstream
