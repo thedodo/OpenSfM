@@ -283,16 +283,38 @@ os.system('mkdir ' + reconstruction_path + '/flatten')
 pcloud_path = reconstruction_path + '/undistorted/depthmaps/merged.ply'
 
 #To read pointcloud
-pcloud = o3d.io.read_point_cloud(pcloud_path)
-points = np.asarray(pcloud.points)
+#pcloud = o3d.io.read_point_cloud(pcloud_path)
+#points = np.asarray(pcloud.points)
 
-get_camera2d(points, reconstruction_path)
+
+plydata = PlyData.read(pcloud_path)
+    
+x_arr = np.array(plydata.elements[0].data['x'])
+y_arr = np.array(plydata.elements[0].data['y'])
+z_arr = np.array(plydata.elements[0].data['z'])
+
+
+r_arr = np.array(plydata.elements[0].data['diffuse_red'])
+g_arr = np.array(plydata.elements[0].data['diffuse_green'])
+b_arr = np.array(plydata.elements[0].data['diffuse_blue'])
+
+xyz = np.dstack((x_arr,y_arr,z_arr))
+colors = np.dstack((b_arr, g_arr, r_arr))
+
+xyz = np.squeeze(xyz)
+colors = np.squeeze(colors)
+#print(xyz.shape)
+#print(colors.shape)
+
+
+#get_camera2d(points, reconstruction_path)
 
 #Get bounds. 
-xyz = np.asarray(pcloud.points)
+#xyz = np.asarray(pcloud.points)
+#print(np.asarray(pcloud).shape)
 
 #FOR LATER USE
-colors = np.asarray(pcloud.colors)
+#colors = np.asarray(pcloud.colors)
 
 #colors = np.ones(xyz.shape) * 255
 
@@ -302,14 +324,17 @@ side_range = (bounds_min[1]-50, bounds_max[1] + 20)
 fwd_range = (bounds_min[0] , bounds_max[0])
 height_range = (bounds_min[2], bounds_max[2])
 
-#flat_im = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
+flat_im2 = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
+cv2.imwrite(reconstruction_path + '/flatten/flatten_ply2.jpeg', flat_im2)
 
 #maybe not the best resolution? dynamically??
 #640x480 firm!!!
-print(colors.shape)
-flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (640,480), colors)
 
-campos = np.load(reconstruction_path + '/flatten/camera_points_2d.npy').astype(np.int32)
+
+
+flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (1280,960), colors)
+
+#campos = np.load(reconstruction_path + '/flatten/camera_points_2d.npy').astype(np.int32)
 
 
 #flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
