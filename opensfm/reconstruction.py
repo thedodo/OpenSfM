@@ -1396,25 +1396,8 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     if(localize):
         #Localize each image.
         for reconstruction in data.load_reconstruction():     
-            # print("reconstruction: ", reconstruction)
-            # perImageDict = {k:[k] for k in remaining_images}
-            # for im1, im2 in pairs:
-            #     if(im1 in remaining_images):
-            #         perImageDict[im1].append(im2)
-            #     if(im2 in remaining_images):
-            #         perImageDict[im2].append(im1)
-
-            # # for im in remaining_images:
-            # for im in perImageDict:
-            #     print("for im: ", im, "the associated images: ", perImageDict[im])
-            #     candidates = reconstructed_points_for_images(tracks_manager, reconstruction, perImageDict[im], True)
-            #     print("candidates are: ", candidates)
-            #     if not candidates:
-            #         break
-            #     logger.info("-------------------------------------------------------")
             threshold = data.config['resection_threshold']
             min_inliers = data.config['resection_min_inliers']
-            # for image, num_tracks in candidates:
             for image in remaining_images:
                 shot_data_dict = {}
                 camera = reconstruction.cameras[data.load_exif(image)['camera']]
@@ -1460,10 +1443,6 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             os.remove(image_matches_path)
             print("Removed: ", image_matches_path)
 
-                # for im1, im2 in pairs:
-                #     if(im1 != im):
-                #         continue 
-                #     print("Doing ", im1, " and ", im2)
         print("localize dict = ", localize_dict)
         with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
             json.dump(localize_dict, fp)
