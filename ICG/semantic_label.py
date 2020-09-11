@@ -100,7 +100,20 @@ def getPointColorFromReconstruction(reconstruction, image_dir, point):
         res = [0, 255, 255]
     else:
         res = [0, 0, 255]
-    return res 
+    return res
+
+def refine_proj(flatIm):
+    im = np.ones(flatIm.shape) * 255
+    for i in range(flatIm.shape[0]):
+        for j in range(flatIm.shape[1]):
+            rgb = flatIm[i, j, :]
+            print(rgb)
+            if(np.all(rgb == np.array([0, 255, 0])) or np.all(rgb == np.array([0, 0, 255]))):
+                print("haha")
+                im[i, j, :] = np.array([0, 0, 255])
+            if(np.all(rgb == np.array([255, 255, 255]))):
+                im[i, j, :] = np.array([0, 255, 0]) 
+    return im
 
 def label_pointcloud(data_path, semantics_path):
     #We take each shot, see which points fall on it and label it with corresponding semantic label.
@@ -171,9 +184,10 @@ def label_pointcloud(data_path, semantics_path):
     boundMin = np.amin(planePointSet, axis=0)
     boundMax = np.amax(planePointSet, axis=0)
     planePtList = samplePlanePoints(None, boundMin, boundMax)
+    print("Sampled ", len(planePtList), " points on plane")
     validPlanePts = np.empty((0, 6))
     count = 0
-    n_elem = 1000
+    n_elem = len(planePtList)
     interval = int(len(planePtList) / n_elem)
     planePtList = planePtList[::interval]
     for planePt in planePtList:
@@ -198,7 +212,7 @@ def label_pointcloud(data_path, semantics_path):
     #     flat[ptproj[0, 1], ptproj[0, 0], :] = np.array([0, 0, 255])
 
     cv2.imwrite("flattened_img.jpg", flat)
-    return pcl
+    return final_pcl
         
 
 if __name__=="__main__":
@@ -208,3 +222,6 @@ if __name__=="__main__":
     args = parser.parse_args()
     labeled_pointcloud = label_pointcloud(args.data_path, args.semantics_path)
     np.savetxt("labeled_cloud.txt", labeled_pointcloud)
+    # flatIm = cv2.imread("/home/chetan/Documents/S4VI/sv4vi-icg/Docker_OpenSFM/OpenSfM/flattened_img.jpg")
+    # refIm = refine_proj(flatIm)
+    cv2.imwrite("/home/chetan/Documents/S4VI/sv4vi-icg/Docker_OpenSFM/OpenSfM/refined_flattened_img.jpg", refIm)
