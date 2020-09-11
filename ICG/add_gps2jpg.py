@@ -1,3 +1,5 @@
+#!/usr/bin/python
+#-*- coding:utf-8 -*-
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 import glob
@@ -8,17 +10,19 @@ import numpy as np
 import os
 import piexif
 from fractions import Fraction
-
+import sys
 
 #Ordner mit Bildern sowie einem CVS file mit den GPS Koordinaten
 
-<<<<<<< HEAD
-folder = '/home/dominik/SV4VI/Experimental/OpenSfM/data/Graz/1594898311.9886508/'
-=======
-folder = '/home/dominik/SV4VI/Experimental/OpenSfM/data/Graz/1594893635.0159063/'
->>>>>>> localize_upstream
-im_list = glob.glob(folder + '*.jpg')
-gps_file = glob.glob(folder + '*.csv')
+if len (sys.argv) != 2 :
+    print("Usage: python add_gps2jpg.py folder")
+    sys.exit (1)
+
+folder = sys.argv[1]
+im_list = glob.glob(folder + '/*.jpg')
+gps_file = glob.glob(folder + '/*.csv')
+#print(gps_file)
+#print(im_list)
 
 class ImageMetaData(object):
     '''
@@ -110,7 +114,7 @@ latlong = []
 im_names = []
 for el in range(len(lines)):
     latlong.append(lines[el].split('.jpg')[-1])
-    curname = folder + lines[el].split(',')[0]
+    curname = folder + '/' +lines[el].split(',')[0]
     im_names.append(curname)
     
   
@@ -196,14 +200,21 @@ def set_gps_location(file_name, lat, lng, altitude):
     
     
     
+#print(len(latlong))
+#print(len(im_names))
 
 for i in range(len(im_names)):
 
   #lat
+  #can be none, check for that!!!
+  if(latlong[i].split(',')[1] == 'None'):
+      continue
   cur_lat = float(latlong[i].split(',')[1])
   #long
+  if(latlong[i].split(',')[1] == 'None'):
+      continue  
   cur_long = float(latlong[i].split(',')[2])
   cur_im = im_names[i]
-  print(cur_im)
+  print("set gps location for: ",cur_im)
 
   set_gps_location(cur_im, cur_lat, cur_long, 0.0)

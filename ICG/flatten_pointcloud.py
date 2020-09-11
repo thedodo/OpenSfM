@@ -5,6 +5,7 @@ import json
 import open3d as o3d
 from opensfm import dataset
 import os 
+import sys
 
 # ==============================================================================
 #                                                                   SCALE_TO_255
@@ -116,92 +117,8 @@ def project_points_to_plane_xy(points, plane, norm=False):
 
     return pcd_proj_xy, dists_to_plane
 
+ 
     
-def flatten_by_plane_proj(points, plane, size, colors):
-    proj, dists = project_points_to_plane_xy(points, plane)
-
-    #Normalize distances.
-    proj_min = np.amin(proj, axis=0)
-    proj_max = np.amax(proj, axis=0)
-    proj_range = np.abs(proj_max - proj_min)
-
-    #Get point closest to the lower bound.
-    #orig_pt_idx = np.argmin(np.linalg.norm((proj - proj_min), axis = 1))
-    orig_pt = proj_min #proj[orig_pt_idx, :]
-
-    #Shift so that above pt is the origin.
-    proj = proj - orig_pt 
-    proj = proj / proj_range
-
-    #Scale coordinates to the aspect ratio we need.
-    proj = (np.floor(proj * size)).astype(np.int32) 
-    
-    im = np.zeros((size[1] + 1, size[0] + 1,3))
-    im[proj[:, 1], proj[:, 0],:] = colors * 255
-
-    return im
-
-def flatten_coords_by_plane_proj(pt, points, plane, size):
-    
-    #points = np.vstack((points, pt))
-
-    proj, dists = project_points_to_plane_xy(points, plane)
-    pt_proj, pt_dists = project_points_to_plane_xy(pt, plane)
-
-    #Normalize distances.
-    proj_min = np.amin(proj, axis=0)
-    proj_max = np.amax(proj, axis=0)
-    proj_range = np.abs(proj_max - proj_min)
-
-    #Get point closest to the lower bound.
-    # orig_pt_idx = np.argmin(np.linalg.norm((proj - proj_min), axis = 1))
-    orig_pt = proj_min #proj[orig_pt_idx, :]
-
-    #Shift so that above pt is the origin.
-    proj = proj - orig_pt  
-    proj = proj / proj_range
-
-    pt_proj = pt_proj - orig_pt
-    pt_proj = pt_proj / proj_range
-
-    #Scale coordinates to the aspect ratio we need.
-    pt_proj = (np.floor(pt_proj * size)).astype(np.int32) 
-
-    return pt_proj 
-
-def get_camera2d(points, opensfm_data_path):
-    opensfm_reconstruction_path = os.path.join(opensfm_data_path, "reconstruction.json")
-    with open(opensfm_reconstruction_path) as f:
-        data = json.load(f)[0]
-    
-    dset = dataset.DataSet(opensfm_data_path)
-    reference = dset.load_reference()
-
-    # print(data["shots"])
-    shots = data["shots"]
-    plane = np.array([0, 0, 1, 0])
-    size = ((640, 480))
-    
-    pt3d = np.empty((0, 3))
-    pt2d = np.empty((0, 2))
-    gpsarr = np.empty((0, 3))
-    for id in shots:
-        shot = shots[id]
-        point3d = np.asarray(shot['translation'])
-        # print("point3d = ", point3d)
-        gps = np.asarray(shot['gps_position'])
-        point2d = flatten_coords_by_plane_proj(gps, points, plane, size)
-
-        pt3d = np.vstack((pt3d, point3d))
-        pt2d = np.vstack((pt2d, point2d))
-        gps = reference.to_lla(gps[0], gps[1], gps[2])
-        gpsarr = np.vstack((gpsarr, gps))
-    
-    np.save("/home/dominik/Desktop/CAM_TEST/camera_points_3d.npy", pt3d)
-    np.save("/home/dominik/Desktop/CAM_TEST/camera_points_2d.npy", pt2d)
-    np.save("/home/dominik/Desktop/CAM_TEST/camera_points_gps.npy", gpsarr)   
-
-
 def cleanPLY():
 
     plydata = PlyData.read('/home/dominik/SV4VI/OpenSfM/data/lund/undistorted/depthmaps/merged.ply')
@@ -258,6 +175,93 @@ def cleanPLY():
     
     file.close()
 
+
+def flatten_by_plane_proj(points, plane, size, colors):
+    proj, dists = project_points_to_plane_xy(points, plane)
+
+    #Normalize distances.
+    proj_min = np.amin(proj, axis=0)
+    proj_max = np.amax(proj, axis=0)
+    proj_range = np.abs(proj_max - proj_min)
+
+    #Get point closest to the lower bound.
+    #orig_pt_idx = np.argmin(np.linalg.norm((proj - proj_min), axis = 1))
+    orig_pt = proj_min #proj[orig_pt_idx, :]
+
+    #Shift so that above pt is the origin.
+    proj = proj - orig_pt 
+    proj = proj / proj_range
+
+    #Scale coordinates to the aspect ratio we need.
+    proj = (np.floor(proj * size)).astype(np.int32) 
+    
+    im = np.zeros((size[1] + 1, size[0] + 1,3))
+    im[proj[:, 1], proj[:, 0],:] = colors * 255
+
+    return im
+
+def flatten_coords_by_plane_proj(pt, points, plane, size):
+    
+    #points = np.vstack((points, pt))
+
+    proj, dists = project_points_to_plane_xy(points, plane)
+    pt_proj, pt_dists = project_points_to_plane_xy(pt, plane)
+
+    #Normalize distances.
+    proj_min = np.amin(proj, axis=0)
+    proj_max = np.amax(proj, axis=0)
+    proj_range = np.abs(proj_max - proj_min)
+
+    #Get point closest to the lower bound.
+    # orig_pt_idx = np.argmin(np.linalg.norm((proj - proj_min), axis = 1))
+    orig_pt = proj_min #proj[orig_pt_idx, :]
+
+    #Shift so that above pt is the origin.
+    proj = proj - orig_pt  
+    proj = proj / proj_range
+
+    pt_proj = pt_proj - orig_pt
+    pt_proj = pt_proj / proj_range
+
+    #Scale coordinates to the aspect ratio we need.
+    pt_proj = (np.floor(pt_proj * size)).astype(np.int32) 
+
+    return pt_proj 
+
+def get_camera2d(points, opensfm_data_path):
+    
+    opensfm_reconstruction_path = opensfm_data_path + "/reconstruction.json"
+    with open(opensfm_reconstruction_path) as f:
+        data = json.load(f)[0]
+    
+    dset = dataset.DataSet(opensfm_data_path)
+    reference = dset.load_reference()
+
+    # print(data["shots"])
+    shots = data["shots"]
+    plane = np.array([0, 0, 1, 0])
+    size = ((640, 480))
+    
+    pt3d = np.empty((0, 3))
+    pt2d = np.empty((0, 2))
+    gpsarr = np.empty((0, 3))
+    for id in shots:
+        shot = shots[id]
+        point3d = np.asarray(shot['translation'])
+        # print("point3d = ", point3d)
+        gps = np.asarray(shot['gps_position'])
+        point2d = flatten_coords_by_plane_proj(gps, points, plane, size)
+
+        pt3d = np.vstack((pt3d, point3d))
+        pt2d = np.vstack((pt2d, point2d))
+        gps = reference.to_lla(gps[0], gps[1], gps[2])
+        gpsarr = np.vstack((gpsarr, gps))
+    
+    np.save(opensfm_data_path + "/flatten/camera_points_3d.npy", pt3d)
+    np.save(opensfm_data_path + "/flatten/camera_points_2d.npy", pt2d)
+    np.save(opensfm_data_path + "/flatten/camera_points_gps.npy", gpsarr)   
+
+
 def getNormPos(campos):
     
     campos_norm = np.zeros((len(campos[:,0]),2))
@@ -273,19 +277,28 @@ def getNormPos(campos):
 
 
 
+reconstruction_path = sys.argv[1]
+
+os.system('mkdir ' + reconstruction_path + '/flatten')
+pcloud_path = reconstruction_path + '/undistorted/depthmaps/merged.ply'
+
 #To read pointcloud
-pcd = o3d.io.read_point_cloud('/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged_clean.ply')
+pcloud = o3d.io.read_point_cloud(pcloud_path)
+points = np.asarray(pcloud.points)
+
+get_camera2d(points, reconstruction_path)
 
 #Get bounds. 
-xyz = np.asarray(pcd.points)
+xyz = np.asarray(pcloud.points)
+
 #FOR LATER USE
+colors = np.asarray(pcloud.colors)
 
-colors = np.asarray(pcd.colors)
-
+#colors = np.ones(xyz.shape) * 255
 
 bounds_min = np.amin(xyz, axis = 0)
 bounds_max = np.amax(xyz, axis=0)
-side_range = (bounds_min[1], bounds_max[1])
+side_range = (bounds_min[1]-50, bounds_max[1] + 20)
 fwd_range = (bounds_min[0] , bounds_max[0])
 height_range = (bounds_min[2], bounds_max[2])
 
@@ -293,25 +306,15 @@ height_range = (bounds_min[2], bounds_max[2])
 
 #maybe not the best resolution? dynamically??
 #640x480 firm!!!
+print(colors.shape)
 flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (640,480), colors)
 
-campos = np.load('/home/dominik/Desktop/CAM_TEST/camera_points_2d.npy').astype(np.int32)
+campos = np.load(reconstruction_path + '/flatten/camera_points_2d.npy').astype(np.int32)
 
 
-flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
+#flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
 
-cv2.imwrite('/home/dominik/Desktop/CAM_TEST/test.jpeg', flat_im)
-
-
-pcloud_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged.ply"
-reconstruction_path = "/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/"
-
-pcloud = o3d.io.read_point_cloud(pcloud_path)
-points = np.asarray(pcloud.points)
-
-print(points)
-
-get_camera2d(points, reconstruction_path)
+cv2.imwrite(reconstruction_path + '/flatten/flatten_ply.jpeg', flat_im)
 
 #campos_norm = getNormPos(campos)
 
