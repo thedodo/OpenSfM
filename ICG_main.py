@@ -12,10 +12,12 @@ parser = argparse.ArgumentParser(description='ICG main function für SV4VI Proje
 parser.add_argument('--build', help='Sollte zur Einrichtung der Software ausgeführt werden.', action="store_true")
 parser.add_argument('--test', help='Test ob die Einrichtung funktioniert hat.', action="store_true")
 parser.add_argument('--test_loc', help = 'Testet Lokalisierung uvm. Für eine genaue Übersicht: https://github.com/thedodo/OpenSfM.git', action="store_true")
-
+parser.add_argument('--gps2jpg', help ='Fügt GPS Daten von *.cvs zu *.jpg hinzu. Verwendung: --gps2jpg pfad/zu/jpegundcvs')
+parser.add_argument('--reconstruct', help ='Ordner mit allen *.jpg für eine 3D Rekonstruktion. Dies ist Voraussetzung für die Lokalisierung. Verwendung --reconstruct pfad/zu/jpeg')
+parser.add_argument('--georef_ply', help ='3D Rekonstruktion von XYZ zu Lat/Long bringen. Verwendung: --georef_ply ./data/name')
+parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine Übersicht und Voraussetzungen bitte auf: https://github.com/thedodo/OpenSfM.git schauen. Verwendung --localize data/folder/localize/image.jpg')
+parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply path/to/ply')
 args = parser.parse_args()
-
-
 
 
 
@@ -122,31 +124,31 @@ if args.test:
 
 if args.test_loc:
     
-  #  os.system('mkdir data/inffeldgasse')
-  #  os.chdir('data/inffeldgasse')
- #   os.system('mkdir images')
-  #  os.chdir('images/')
-  #  os.system('wget https://cloud.tugraz.at/index.php/s/7HYz9iz3fcr43bH/download')
-  #  os.system('unzip download')
-  #  os.chdir('../../../')
+    os.system('mkdir data/inffeldgasse')
+    os.chdir('data/inffeldgasse')
+    os.system('mkdir images')
+    os.chdir('images/')
+    os.system('wget https://cloud.tugraz.at/index.php/s/7HYz9iz3fcr43bH/download')
+    os.system('unzip download')
+    os.chdir('../../../')
     
-  #  os.system('python3 ICG/add_gps2jpg.py ./data/inffeldgasse/images/')
+    os.system('python3 ICG/add_gps2jpg.py ./data/inffeldgasse/images/')
     
     
     im_list = glob.glob('./data/inffeldgasse/images/*.jpg')
     
-  #  meta_data =  ImageMetaData(random.choice(im_list))
-  #  exif_data = meta_data.get_exif_data()
-  #  latlng =meta_data.get_lat_lng()
- #   if(str(latlng[0]) == 'None'):
-   #     print('Etwas ist schief gegangen!')
-   #     exit()
-  #  else:
-   #     print('GPS tags erfolgreich')
-   #     str_latlong = str(latlng[0]) + ',' + str(latlng[1]) + '\n'
-   #     print(str_latlong)
+    meta_data =  ImageMetaData(random.choice(im_list))
+    exif_data = meta_data.get_exif_data()
+    latlng =meta_data.get_lat_lng()
+    if(str(latlng[0]) == 'None'):
+        print('Etwas ist schief gegangen!')
+        exit()
+    else:
+        print('GPS tags erfolgreich')
+        str_latlong = str(latlng[0]) + ',' + str(latlng[1]) + '\n'
+        print(str_latlong)
    
-    #os.system('./bin/opensfm_run_all data/inffeldgasse > log_test_inffeld.txt')
+    os.system('./bin/opensfm_run_all data/inffeldgasse > log_test_inffeld.txt')
     file_path = './data/inffeldgasse/undistorted/depthmaps/merged.ply'
     # check if size of file is 0
     if os.stat(file_path).st_size == 0:
@@ -154,14 +156,86 @@ if args.test_loc:
         exit()
     
     
-    #os.system('python3 ICG/georeference_ply.py --opensfm_data_path data/inffeldgasse --plyfile_path data/inffeldgasse/undistorted/depthmaps/merged.ply')
-    #os.system('mkdir ./data/inffeldgasse/localize/')
-    #rand_to_loc = random.choice(im_list)
-    #rand_name = rand_to_loc.split('/')[-1]
-    #os.system('cp '+ rand_to_loc + ' ./data/inffeldgasse/localize/' + rand_name)
-    #os.system('bin/localize data/inffeldgasse')
-    #os.system('python3 ICG/gps_to_name.py data/inffeldgasse/localize/localize.json ' + rand_name)
+    os.system('python3 ICG/georeference_ply.py --opensfm_data_path data/inffeldgasse --plyfile_path data/inffeldgasse/undistorted/depthmaps/merged.ply')
+    os.system('mkdir ./data/inffeldgasse/localize/')
+    rand_to_loc = random.choice(im_list)
+    rand_name = rand_to_loc.split('/')[-1]
+    os.system('cp '+ rand_to_loc + ' ./data/inffeldgasse/localize/' + rand_name)
+    os.system('bin/localize data/inffeldgasse')
+    os.system('python3 ICG/gps_to_name.py data/inffeldgasse/localize/localize.json ' + rand_name)
     
     os.system('python3 ICG/flatten_pointcloud.py data/inffeldgasse')
     
+if args.gps2jpg:
     
+    if not os.path.exists(sys.argv[2]):
+        print("Bitte gib den Pfad zu den *.jpg und *.cvs Dateien an.")
+    else:
+        os.system('python3 ICG/add_gps2jpg.py ' + sys.argv[2])
+        
+        
+if args.reconstruct:
+    if not os.path.exists(sys.argv[2]):
+        print("Bitte gib den Pfad zu den *.jpg")
+    else:
+        folder_name = sys.argv[2].split('/')[-1]
+        if(folder_name == ''):
+            folder_name = sys.argv[2].split('/')[-2]
+           
+        print(folder_name)
+        os.system('mkdir ./data/'+folder_name+'/images')
+        
+        im_list = glob.glob(sys.argv[2]+'/*.jpg')
+        for im in im_list:
+            im_name = im.split('/')[-1]
+            os.system('cp ' + im + ' ./data/'+folder_name + '/images/' + im_name)
+        
+        os.system('./bin/opensfm_run_all data/' + folder_name + ' > log_recons.txt')
+        
+        file_path = './data/' + folder_name + '/undistorted/depthmaps/merged.ply'
+        # check if size of file is 0
+        if os.stat(file_path).st_size == 0:
+            print('Leider scheint etwas schief gelaufen zu sein. Bitte kontrolliere die log-files!')
+            exit()
+    
+if args.georef_ply:
+    
+    if len(sys.argv) != 3:
+        print('Bitte gib osfm und ply pfad ein')
+        exit()
+        
+    if not os.path.exists(sys.argv[2]):
+        print("osfm Pfad wurde nicht erkannt")
+        exit()
+    data_path = sys.argv[2]
+    os.system('python3 ICG/georeference_ply.py --opensfm_data_path ' + data_path + ' --plyfile_path '+data_path+'undistorted/depthmaps/merged.ply')
+    
+    
+    
+    
+if args.localize:    
+    
+    if len(sys.argv) != 3:
+        print('Bitte gib den Pfad zum Bild ein')
+        exit()
+    
+    path_to_image = sys.argv[2]
+    
+    image_name = sys.argv[2].split('/')[-1]
+    
+    # check if size of file is 0
+    if os.stat(path_to_image).st_size == 0:
+        print('Leider konnte das Bild nicht gelesen werden')
+        exit()
+    
+    
+    os.system('bin/localize data/inffeldgasse')
+    os.system('python3 ICG/gps_to_name.py data/inffeldgasse/localize/localize.json ' + image_name)
+
+
+if args.flatten_ply:
+    if len(sys.argv) != 3:
+        print('Bitte gib den Pfad zur Punktwolke ein')
+        exit()
+    path_to_ply = sys.argv[2]
+    os.system('python3 ICG/flatten_pointcloud.py '+ path_to_ply)
