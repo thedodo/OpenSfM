@@ -790,7 +790,7 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         return False, {'num_common_points': len(bs)}
 
     T = multiview.absolute_pose_ransac(
-        bs, Xs, threshold, 1000, 0.999)
+        bs, Xs, threshold, 2000, 0.999)
 
     R = T[:, :3]
     t = T[:, 3]
@@ -808,7 +808,6 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         'num_inliers': ninliers,
     }
     
-    min_inliers = 3
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
@@ -822,8 +821,8 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         for i, succeed in enumerate(inliers):
             if succeed:
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
-        print("Rotation = ", R)
-        print("Translation = ", t)
+        # print("Rotation = ", R)
+        # print("Translation = ", t)
         # if(not(localize)):
         return R, t
         # if(not(reference is None)):
@@ -1404,6 +1403,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 print("Exif of ", image, " :", camera)
                 metadata = get_image_metadata(data, image)
                 reference = data.load_reference()
+
                 R, t = localize_shot(tracks_manager, reconstruction, image,
                                     camera, metadata, threshold, min_inliers)
                 if ((R is None) or (t is None)):
@@ -1413,6 +1413,10 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 shot = reconstruction.shots[image]
 
                 logger.info("Localized image {0}".format(image))
+                
+                config = data.config
+                bundle(reconstruction, camera_priors, None, config)
+                remove_outliers(reconstruction, config)
 
                 print("Shot ", image, " rotation :", shot.pose.rotation)
                 print("Shot ", image, " translation :", shot.pose.translation)
