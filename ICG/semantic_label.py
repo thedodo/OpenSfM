@@ -207,6 +207,8 @@ def label_pointcloud(data_path, semantics_path):
     print("Labeled ", ptcount, " points")
     print("Labeled for ", imcount, " images")
     flat = flatten_by_plane_proj(final_pcl[:, :3], np.array([0, 0, 1, 0]), (640, 480), final_pcl[:, 3:])
+
+    #Enable to Plot CAMERA POSE on IMAGE. 
     # for pt in campose:
     #     ptproj = flatten_coords_by_plane_proj(pt, final_pcl[:, :3], np.array([0, 0, 1, 0]), (640, 480))
     #     flat[ptproj[0, 1], ptproj[0, 0], :] = np.array([0, 0, 255])
