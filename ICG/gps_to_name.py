@@ -3,6 +3,8 @@ import json
 import sys
 import os
 import overpy
+import numpy as np
+from geopy import distance
 
 data = []
 #open should be dynamical obviously
@@ -76,17 +78,64 @@ print('On google maps: ')
 maps_string = 'http://www.google.com/maps/place/' + str(lat) + ',' + str(long)
 print(maps_string)
 
+road_name = names["address"]["road"]
 
-#47.064982, 15.442723
- #47.065998, 15.442159 
+lat_s = round(lat,1) - 0.1
+long_s = round(long,1) - 0.1
+
+lat_l = round(lat,1) + 0.1
+long_l = round(long,1) + 0.1
+
+bbox_string = '(' + str(lat_s) + ',' + str(long_s) + ',' + str(lat_l) + ',' + str(long_l) + ')'
+
+query_string = """way["name"=""" + road_name + "]"+bbox_string+";out;"""
 
 api = overpy.Overpass()
 
-result = api.query("""way["name"="Tummelplatz"](47.0,15.4,47.2,15.6);out;""")
+result = api.query(query_string)
 
 way = result.ways[0]
 nodes = way.get_nodes(resolve_missing=True)
-print(nodes)
+
+#possible accuracy => if 10 nodes in street (evenly spaced?????) then node 2 is 20%!
+street_perc = 1.0/len(nodes)
+
+
+print(len(nodes))
+cur_pos = (lat, long)
+#
+dist = 100000000
+s_pos = -1
+
+for pos in range(0,len(nodes)):
+    
+    #print('node: ', pos)
+    #print('lat: ', nodes[pos].lat)
+    #print('long: ', nodes[pos].lon)
+    node_pos = (nodes[pos].lat, nodes[pos].lon)
+    c_dist = distance.distance(cur_pos, node_pos).km
+    if(dist > c_dist):
+        dist = c_dist
+        s_pos = pos
+    
+perc = int((street_perc * s_pos) * 100)
+
+print('Du hast die Strasse zu %i passiert'  %perc)
+#wellington = (-41.32, 174.81)
+#salamanca = (40.96, -5.50)
+#print(distance.distance(wellington, salamanca).km)
+
+
+        
+    
+
+#iterate over all nodes of the way (street) and get the closest
+
+
+#print(nodes)
+
+
+
 #loc_addr = location.address
 #print(location.address)
 
