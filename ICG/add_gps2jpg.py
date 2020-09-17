@@ -21,8 +21,6 @@ if len (sys.argv) != 2 :
 folder = sys.argv[1]
 im_list = glob.glob(folder + '/*.jpg')
 gps_file = glob.glob(folder + '/*.csv')
-#print(gps_file)
-#print(im_list)
 
 class ImageMetaData(object):
     '''

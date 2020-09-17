@@ -218,10 +218,13 @@ if args.localize:
     if len(sys.argv) != 3:
         print('Bitte gib den Pfad zum Bild ein')
         exit()
-    
-    path_to_image = sys.argv[2]
-    
     image_name = sys.argv[2].split('/')[-1]
+    
+    path_to_image = sys.argv[2].replace(image_name,'')
+    path_to_image = path_to_image.replace('/localize/','')
+    print(path_to_image)
+    
+    print(image_name)
     
     # check if size of file is 0
     if os.stat(path_to_image).st_size == 0:
@@ -229,8 +232,8 @@ if args.localize:
         exit()
     
     
-    os.system('bin/localize data/inffeldgasse')
-    os.system('python3 ICG/gps_to_name.py data/inffeldgasse/localize/localize.json ' + image_name)
+    os.system('bin/localize ' + path_to_image)
+    os.system('python3 ICG/gps_to_name.py '+ path_to_image +'/localize/localize.json ' + image_name)
 
 
 if args.flatten_ply:
