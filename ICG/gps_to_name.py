@@ -89,7 +89,7 @@ long_l = round(long,1) + 0.1
 bbox_string = '(' + str(lat_s) + ',' + str(long_s) + ',' + str(lat_l) + ',' + str(long_l) + ')'
 
 query_string = """way["name"=""" + road_name + "]"+bbox_string+";out;"""
-
+print(query_string)
 api = overpy.Overpass()
 
 result = api.query(query_string)
@@ -101,7 +101,7 @@ nodes = way.get_nodes(resolve_missing=True)
 street_perc = 1.0/len(nodes)
 
 
-print(len(nodes))
+#print(len(nodes))
 cur_pos = (lat, long)
 #
 dist = 100000000
@@ -120,7 +120,7 @@ for pos in range(0,len(nodes)):
     
 perc = int((street_perc * s_pos) * 100)
 
-print('Du hast die Strasse zu %i passiert'  %perc)
+print('Du hast die Strasse zu %i prozent passiert'  %perc)
 #wellington = (-41.32, 174.81)
 #salamanca = (40.96, -5.50)
 #print(distance.distance(wellington, salamanca).km)
