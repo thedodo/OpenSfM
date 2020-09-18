@@ -98,24 +98,6 @@ way = result.ways[0]
 nodes = way.get_nodes(resolve_missing=True)
 
 
-#if road name is not available => search for closest street
-#search in a radius of 100m
-radius = 100.0
-query_test = """way(around:""" + str(radius)+ ',' + str(lat_s) + "," + str(long_s) + """);out;"""
-result_test = api.query(query_test)
-#test_way = result_test.ways[0]
-
-#print(result_test.ways)
-test_way = result_test.ways[0]
-test_nodes = test_way.get_nodes(resolve_missing=True)
-print(test_nodes)
-
-#with this node get name again as before!!!!!!
-location = geolocator.reverse(str(test_nodes[0].lat) + ',' + str(test_nodes[0].lon)) #zoom=16
-print(location.raw)
-
-
-
 #possible accuracy => if 10 nodes in street (evenly spaced?????) then node 2 is 20%!
 street_perc = 1.0/len(nodes)
 
@@ -145,18 +127,25 @@ print('Du hast die Strasse zu %i prozent passiert'  %perc)
 #print(distance.distance(wellington, salamanca).km)
 
 
-        
-    
+      
+#if road name is not available => search for closest street
+#search in a radius of 50m
+radius = 50.0
+query_test = """way(around:""" + str(radius)+ ',' + str(lat) + "," + str(long) + """);out;"""
+result_test = api.query(query_test)
+#test_way = result_test.ways[0]
 
-#iterate over all nodes of the way (street) and get the closest
+#print(result_test.ways)
+test_way = result_test.ways[0]
+test_nodes = test_way.get_nodes(resolve_missing=True)
+#print(test_nodes)
 
+#with this node get name again as before!!!!!!
+location = geolocator.reverse(str(test_nodes[0].lat) + ',' + str(test_nodes[0].lon)) #zoom=16
+print(location.raw)
 
-#print(nodes)
+print(location.raw["display_name"])
 
-
-
-#loc_addr = location.address
-#print(location.address)
 
 
     
