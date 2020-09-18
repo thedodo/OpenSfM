@@ -109,7 +109,12 @@ result_test = api.query(query_test)
 test_way = result_test.ways[0]
 test_nodes = test_way.get_nodes(resolve_missing=True)
 print(test_nodes)
-#with this node get name again as before!!
+
+#with this node get name again as before!!!!!!
+location = geolocator.reverse(str(test_nodes[0].lat) + ',' + str(test_nodes[0].lon)) #zoom=16
+print(location.raw)
+
+
 
 #possible accuracy => if 10 nodes in street (evenly spaced?????) then node 2 is 20%!
 street_perc = 1.0/len(nodes)
