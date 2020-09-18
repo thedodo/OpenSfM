@@ -88,14 +88,28 @@ long_l = round(long,1) + 0.1
 
 bbox_string = '(' + str(lat_s) + ',' + str(long_s) + ',' + str(lat_l) + ',' + str(long_l) + ')'
 
-query_string = """way["name"=""" + road_name + "]"+bbox_string+";out;"""
-print(query_string)
-api = overpy.Overpass()
 
+query_string = """way["name"=""" + road_name + "]"+bbox_string+";out;"""
+
+api = overpy.Overpass()
 result = api.query(query_string)
 
 way = result.ways[0]
 nodes = way.get_nodes(resolve_missing=True)
+
+
+#if road name is not available => search for closest street
+#search in a radius of 100m
+radius = 100.0
+query_test = """way(around:""" + str(radius)+ ',' + str(lat_s) + "," + str(long_s) + """);out;"""
+result_test = api.query(query_test)
+#test_way = result_test.ways[0]
+
+#print(result_test.ways)
+test_way = result_test.ways[0]
+test_nodes = test_way.get_nodes(resolve_missing=True)
+print(test_nodes)
+#with this node get name again as before!!
 
 #possible accuracy => if 10 nodes in street (evenly spaced?????) then node 2 is 20%!
 street_perc = 1.0/len(nodes)
