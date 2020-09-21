@@ -13,7 +13,18 @@ Da hier sehr viel eingerichtet und installiert wird, kann dieser Schritt (je nac
 
 getestet werden. Bekommt man die Meldung: <bold>Die Einrichtung hat funktioniert!</bold> hat alles geklappt. Bei <bold>Leider scheint etwas schief gelaufen zu sein. Bitte kontrolliere die log-files!</bold> ist etwas schief gegangen. Bitte sie dir 'log_test.txt' für mehr Information an oder kontaktiere uns. 
 
+Hat alles geklappt kann man die neue Funktionalität mit: 
 
+-python ICG-main.py --test_loc
+
+testen. Hierbei werden folgende Schritte ausgeführt:
+
+- Es wird ein von uns erstellter Testdatensatz der Inffeldgasse heruntergeladen. Dieser besteht aus ~300 Bildern und einem zugehörigen CVS Datei welche die Lat/Lon Metadaten beinhaltet. 
+- Die Bilder werden geo-referenziert (Lat/Lon wird als Metadaten in das JPEG Format gespeichert). Dies ist ein notwendiger Zwischenschritt für alle weiteren Schritte.
+- Es wird eine 3D-Rekonstruktion aus den Bildern erstellt. Da jedes Bild mit jedem getestet wird, kann dies je nach Hardware sehr lange dauern.
+- Anschließend wird die Rekonstruktion von XYZ-Koordinaten in Lat/Lon-Koordinaten überführt.
+- Ein zufälliges Bild wird ausgewählt und anhand der Punktwolke lokalisiert. Das Ergebnis wird auf die Konsole ausgegeben.
+- Anschließend wird von der Punktwolke noch ein Abbild von der Vogelperspektive gemacht. Dieses wird abgespeichert.
 
 
 
