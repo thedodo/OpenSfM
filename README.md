@@ -26,7 +26,7 @@ testen. Hierbei werden folgende Schritte ausgeführt:
 - Ein zufälliges Bild wird ausgewählt und anhand der Punktwolke lokalisiert. Das Ergebnis wird auf die Konsole ausgegeben.
 - Anschließend wird von der Punktwolke noch ein Abbild von der Vogelperspektive gemacht. Dieses wird abgespeichert.
 
-======================================================================================
+==========================================================================
 #### README von Mappillary zu OpenSfM:
 
 OpenSfM [![Build Status](https://travis-ci.org/mapillary/OpenSfM.svg?branch=master)](https://travis-ci.org/mapillary/OpenSfM)
