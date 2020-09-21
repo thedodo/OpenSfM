@@ -15,7 +15,7 @@ getestet werden. Bekommt man die Meldung: <bold>Die Einrichtung hat funktioniert
 
 Hat alles geklappt kann man die neue Funktionalität mit: 
 
--python ICG-main.py --test_loc
+- python ICG-main.py --test_loc
 
 testen. Hierbei werden folgende Schritte ausgeführt:
 
