@@ -27,7 +27,7 @@ testen. Hierbei werden folgende Schritte ausgeführt:
 - Anschließend wird von der Punktwolke noch ein Abbild von der Vogelperspektive gemacht. Dieses wird abgespeichert.
 
 ======================================================================================
-README von Mappillary zu OpenSfM:
+****README von Mappillary zu OpenSfM:
 
 OpenSfM [![Build Status](https://travis-ci.org/mapillary/OpenSfM.svg?branch=master)](https://travis-ci.org/mapillary/OpenSfM)
 =======
