@@ -1,7 +1,7 @@
 # SV4VI-ICG
 
 ICG source code für das street-view for the visually impaired (SV4VI) Projekt. Die baseline bildet OpenSfM von Mapillary (siehe unten). Dieses repository ist ein fork. 
-ICG-main.py (in diesem Ordner) dient als Einstiegspunkt für alle weiteren Funktionalitäten. Hinweis: Diese und alle weiteren Funktionen sind in python3 geschrieben. Ist dies lokal nicht der Standard, sondern python2 müssen alle Funktionen mit python3 statt python aufgerufen werden.
+**ICG-main.py** (in diesem Ordner) dient als Einstiegspunkt für alle weiteren Funktionalitäten. Hinweis: Diese und alle weiteren Funktionen sind in python3 geschrieben. Ist dies lokal nicht der Standard, sondern python2 müssen alle Funktionen mit python3 statt python aufgerufen werden.
 
 Nachdem das repository lokal gedownloaded/geklont wurde, muss einmalig für die Installation folgendes ausgeführt werden (nur unter Ubuntu 18.04 getestet):
 
@@ -11,7 +11,7 @@ Da hier sehr viel eingerichtet und installiert wird, kann dieser Schritt (je nac
 
 - python ICG-main.py --test 
 
-getestet werden. Bekommt man die Meldung: <bold>Die Einrichtung hat funktioniert!</bold> hat alles geklappt. Bei <bold>Leider scheint etwas schief gelaufen zu sein. Bitte kontrolliere die log-files!</bold> ist etwas schief gegangen. Bitte sie dir 'log_test.txt' für mehr Information an oder kontaktiere uns. 
+getestet werden. Bekommt man die Meldung: **Die Einrichtung hat funktioniert!** hat alles geklappt. Bei **Leider scheint etwas schief gelaufen zu sein. Bitte kontrolliere die log-files!** ist etwas schief gegangen. Bitte sie dir *log_test.txt* für mehr Information an oder kontaktiere uns. 
 
 Hat alles geklappt kann man die neue Funktionalität mit: 
 
