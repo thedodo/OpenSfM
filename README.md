@@ -26,6 +26,17 @@ testen. Hierbei werden folgende Schritte ausgeführt:
 - Ein zufälliges Bild wird ausgewählt und anhand der Punktwolke lokalisiert. Das Ergebnis wird auf die Konsole ausgegeben.
 - Anschließend wird von der Punktwolke noch ein Abbild von der Vogelperspektive gemacht. Dieses wird abgespeichert.
 
+
+Alle Schritte können auch einzeln mit folgenden Befehlen ausgeführt werden. Eine Liste von allen möglichen Befehlen kann mit **python ICG-main.py --help** angesehen werden: 
+
+- python ICG-main.py --gps2jpg /lokaler/pfad/zu/jpegundcvs. Diese Funktion wird verwendet um die GPS Koordinaten der CVS Datei in den Bildern als Metadatei abzuspeichern. Dieser Schritt ist notwendig um später die Lokalisierung im richtigen Koordinatensystem durchführen zu können. Dieser Schritt sollte **VOR** der Rekonstruktion gemacht werden. 
+
+- python ICG-main.py --reconstruct lokaler/pfad/zu/bildern. Funktion zur 3D Rekonstruktion einer Sequenz von Bildern. Hier werden die Bilder zuerst in den entsprechenden Ordner kopiert (*./data/name/images/*) und anschließend die entsprechenden Funktionen zur Rekonstruktion aufgerufen. Je nach Hardware und Anzahl/Auflösung der Bildern kann es lange dauern. Die 3D-Rekonstruktion kann dann in *./data/name/undistorted/depthmaps/merged.ply* angesehen werden.
+
+
+- python ICG-main.py --georef_ply /OSfM_data_path. Wird verwendet um eine Transformation der 3D Rekonstruktion von XYZ zu GPS zu machen. Die Funktionen 'python ICG-main.py --gps2jpg' und 'python ICG-main.py --reconstruct' sind beides Vorbedingungen.
+
+
 ==========================================================================
 #### README von Mappillary zu OpenSfM:
 
