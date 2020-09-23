@@ -38,7 +38,7 @@ Alle Schritte können auch einzeln mit folgenden Befehlen ausgeführt werden. Ei
 
 - python ICG_main.py --localize ./data/name/localize/image_zum_lok.jpg. Das Bild image_zum_lok.jpg wird innerhalb der 3D Rekonstruktion in ./data/name lokalisiert. Sofern diese in GPS Koordinatensystem ist, wird die berechnete Lat/Lon Position zurückgegeben. 
 
-- python ICG_main.py --flatten_ply path/to/ply. Es wird eine 2D Abbildung der 3D Rekonstruktion in Vogelperspektive gemacht. 
+- python ICG_main.py --flatten_ply ./data/name/. Es wird eine 2D Abbildung der 3D Rekonstruktion in Vogelperspektive gemacht. Diese wird in ./data/name/flatten abgespeichert. 
 
 ==========================================================================
 #### README von Mappillary zu OpenSfM:
