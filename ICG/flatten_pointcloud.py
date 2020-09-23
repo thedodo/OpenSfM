@@ -22,7 +22,6 @@ def scale_to_255(a, min, max, dtype=np.uint8):
 # ==============================================================================
 def flatten_pcl(points, res=0.1, side_range=(-10., 10.), fwd_range = (-10., 10.), height_range=(-2., 2.)):
     """ Creates an 2D birds eye view representation of the point cloud data.
-
     Args:
         points:     (numpy array)
                     N rows of points data

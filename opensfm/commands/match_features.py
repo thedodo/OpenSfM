@@ -14,7 +14,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-
 class Command:
     name = 'match_features'
     help = 'Match features between image pairs'
