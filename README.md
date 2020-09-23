@@ -36,6 +36,9 @@ Alle Schritte können auch einzeln mit folgenden Befehlen ausgeführt werden. Ei
 
 - python ICG-main.py --georef_ply /OSfM_data_path. Wird verwendet um eine Transformation der 3D Rekonstruktion von XYZ zu GPS zu machen. Die Funktionen 'python ICG-main.py --gps2jpg' und 'python ICG-main.py --reconstruct' sind beides Vorbedingungen.
 
+- python ICG-main.py --localize ./data/name/localize/image_zum_lok.jpg. Das Bild image_zum_lok.jpg wird innerhalb der 3D Rekonstruktion in ./data/name lokalisiert. Sofern diese in GPS Koordinatensystem ist, wird die berechnete Lat/Lon Position zurückgegeben. 
+
+- python ICG-main.py --flatten_ply path/to/ply. Es wird eine 2D Abbildung der 3D Rekonstruktion in Vogelperspektive gemacht. 
 
 ==========================================================================
 #### README von Mappillary zu OpenSfM:
