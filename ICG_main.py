@@ -16,10 +16,10 @@ parser.add_argument('--gps2jpg', help ='Fügt GPS Daten von *.cvs zu *.jpg hinzu
 parser.add_argument('--reconstruct', help ='Ordner mit allen *.jpg für eine 3D Rekonstruktion. Dies ist Voraussetzung für die Lokalisierung. Verwendung --reconstruct pfad/zu/jpeg')
 parser.add_argument('--georef_ply', help ='3D Rekonstruktion von XYZ zu Lat/Long bringen. Verwendung: --georef_ply ./data/name')
 parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine Übersicht und Voraussetzungen bitte auf: https://github.com/thedodo/OpenSfM.git schauen. Verwendung --localize data/folder/localize/image.jpg')
-parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply path/to/ply')
+parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply ./data/name/')
 args = parser.parse_args()
 
-
+##maybe show GPS on google map? https://www.google.com/maps/dir/33.93729,-106.85761/33.91629,-106.866761/33.98729,-106.85861//@34.0593359,-106.7131944,11z
 
 
 class ImageMetaData(object):

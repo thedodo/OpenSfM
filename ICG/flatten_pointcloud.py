@@ -227,7 +227,7 @@ def flatten_coords_by_plane_proj(pt, points, plane, size):
 
     return pt_proj 
 
-def get_camera2d(points, opensfm_data_path):
+def get_camera2d(points, opensfm_data_path, size):
     
     opensfm_reconstruction_path = opensfm_data_path + "/reconstruction.json"
     with open(opensfm_reconstruction_path) as f:
@@ -239,7 +239,6 @@ def get_camera2d(points, opensfm_data_path):
     # print(data["shots"])
     shots = data["shots"]
     plane = np.array([0, 0, 1, 0])
-    size = ((640, 480))
     
     pt3d = np.empty((0, 3))
     pt2d = np.empty((0, 2))
@@ -249,16 +248,14 @@ def get_camera2d(points, opensfm_data_path):
         point3d = np.asarray(shot['translation'])
         # print("point3d = ", point3d)
         gps = np.asarray(shot['gps_position'])
-        point2d = flatten_coords_by_plane_proj(gps, points, plane, size)
+        point2d = flatten_coords_by_plane_proj(point3d, points, plane, size)
 
         pt3d = np.vstack((pt3d, point3d))
         pt2d = np.vstack((pt2d, point2d))
         gps = reference.to_lla(gps[0], gps[1], gps[2])
         gpsarr = np.vstack((gpsarr, gps))
-    
-    np.save(opensfm_data_path + "/flatten/camera_points_3d.npy", pt3d)
-    np.save(opensfm_data_path + "/flatten/camera_points_2d.npy", pt2d)
-    np.save(opensfm_data_path + "/flatten/camera_points_gps.npy", gpsarr)   
+        
+    return pt3d, pt2d, gpsarr
 
 
 def getNormPos(campos):
@@ -302,20 +299,6 @@ colors = np.dstack((b_arr, g_arr, r_arr))
 
 xyz = np.squeeze(xyz)
 colors = np.squeeze(colors)
-#print(xyz.shape)
-#print(colors.shape)
-
-
-#get_camera2d(points, reconstruction_path)
-
-#Get bounds. 
-#xyz = np.asarray(pcloud.points)
-#print(np.asarray(pcloud).shape)
-
-#FOR LATER USE
-#colors = np.asarray(pcloud.colors)
-
-#colors = np.ones(xyz.shape) * 255
 
 bounds_min = np.amin(xyz, axis = 0)
 bounds_max = np.amax(xyz, axis=0)
@@ -324,26 +307,21 @@ fwd_range = (bounds_min[0] , bounds_max[0])
 height_range = (bounds_min[2], bounds_max[2])
 
 flat_im2 = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
+
+pt3d, pt2d, gpsarr = get_camera2d(xyz, reconstruction_path, (3279,2986))
+pt2d = pt2d.astype(np.uint8)
+
+
+#gray to color so markers can be red!
+flat_im2 = np.dstack((flat_im2,flat_im2,flat_im2))
+
+print(pt2d)
+
+flat_im2[pt2d[0,:],pt2d[1,:],:] = np.array([0,0,255])
+
 cv2.imwrite(reconstruction_path + '/flatten/flatten_ply2.jpeg', flat_im2)
 
-#maybe not the best resolution? dynamically??
-#640x480 firm!!!
-
-
-
-flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (1280,960), colors)
-
-#campos = np.load(reconstruction_path + '/flatten/camera_points_2d.npy').astype(np.int32)
-
-
-#flat_im[campos[:,0],campos[:,1],:] = np.array([0,0,255])
+#size should be dynamic!
+flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (3279,2986), colors)
 
 cv2.imwrite(reconstruction_path + '/flatten/flatten_ply.jpeg', flat_im)
-
-#campos_norm = getNormPos(campos)
-
-#np.save("/home/dominik/Desktop/CAM_TEST/camera_points_2d_norm.npy", campos_norm)    
-
-
-#print(campos)
-#print(campos_norm)
