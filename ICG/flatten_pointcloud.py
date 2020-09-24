@@ -118,9 +118,9 @@ def project_points_to_plane_xy(points, plane, norm=False):
 
  
     
-def cleanPLY():
+def cleanPLY(ply_path, ply_cleaned):
 
-    plydata = PlyData.read('/home/dominik/SV4VI/OpenSfM/data/lund/undistorted/depthmaps/merged.ply')
+    plydata = PlyData.read(ply_path)
         
     x_arr = np.array(plydata.elements[0].data['x'])
     y_arr = np.array(plydata.elements[0].data['y'])
@@ -137,27 +137,27 @@ def cleanPLY():
     low = np.percentile(z_arr, 2)     
     
     
-    idx_baaaaaad_pos = np.where(z_arr > high)
-    idx_baaaaaad_neg = np.where(z_arr < low)
+    idx_bad_pos = np.where(z_arr > high)
+    idx_bad_neg = np.where(z_arr < low)
     
-    idx_baaaaaad = np.concatenate((idx_baaaaaad_pos, idx_baaaaaad_neg), axis=1)[0]
+    idx_bad = np.concatenate((idx_bad_pos, idx_bad_neg), axis=1)[0]
     
-    x_arr_neeeeiiighhh = np.delete(x_arr, idx_baaaaaad)
-    y_arr_neeeeiiighhh = np.delete(y_arr, idx_baaaaaad)
-    z_arr_neeeeiiighhh = np.delete(z_arr, idx_baaaaaad)
+    x_arr_new = np.delete(x_arr, idx_bad)
+    y_arr_new = np.delete(y_arr, idx_bad)
+    z_arr_new = np.delete(z_arr, idx_bad)
     
-    r_arr_neeeeiiighhh = np.delete(r_arr, idx_baaaaaad)
-    g_arr_neeeeiiighhh = np.delete(g_arr, idx_baaaaaad)
-    b_arr_neeeeiiighhh = np.delete(b_arr, idx_baaaaaad)
+    r_arr_new = np.delete(r_arr, idx_bad)
+    g_arr_new = np.delete(g_arr, idx_bad)
+    b_arr_new = np.delete(b_arr, idx_bad)
     
     
     points = []    
-    for pt_count in range(0, len(x_arr_neeeeiiighhh)):
+    for pt_count in range(0, len(x_arr_new)):
         
-        points.append("%f %f %f %d %d %d 0\n"%(x_arr_neeeeiiighhh[pt_count] ,y_arr_neeeeiiighhh[pt_count] ,z_arr_neeeeiiighhh[pt_count] ,r_arr_neeeeiiighhh[pt_count] ,g_arr_neeeeiiighhh[pt_count], b_arr_neeeeiiighhh[pt_count]))
+        points.append("%f %f %f %d %d %d 0\n"%(x_arr_new[pt_count] ,y_arr_new[pt_count] ,z_arr_new[pt_count] ,r_arr_new[pt_count] ,g_arr_new[pt_count], b_arr_new[pt_count]))
     
     
-    file = open('/home/dominik/SV4VI/Experimental/OpenSfM/data/lund/undistorted/depthmaps/merged_clean.ply',"w")
+    file = open(ply_cleaned,"w")
     file.write('''ply
     #format ascii 1.0
     #element vertex %d
@@ -170,7 +170,7 @@ def cleanPLY():
     #property uchar alpha
     #end_header
     #%s
-    #'''%(len(x_arr_neeeeiiighhh),"".join(points)))
+    #'''%(len(x_arr_new),"".join(points)))
     
     file.close()
 
@@ -248,7 +248,8 @@ def get_camera2d(points, opensfm_data_path, size):
         point3d = np.asarray(shot['translation'])
         # print("point3d = ", point3d)
         gps = np.asarray(shot['gps_position'])
-        point2d = flatten_coords_by_plane_proj(point3d, points, plane, size)
+        
+        point2d = flatten_coords_by_plane_proj(pt3d, points, plane, size)
 
         pt3d = np.vstack((pt3d, point3d))
         pt2d = np.vstack((pt2d, point2d))
@@ -308,20 +309,29 @@ height_range = (bounds_min[2], bounds_max[2])
 
 flat_im2 = flatten_pcl(xyz, 0.1, side_range, fwd_range, height_range)
 
-pt3d, pt2d, gpsarr = get_camera2d(xyz, reconstruction_path, (3279,2986))
-pt2d = pt2d.astype(np.uint8)
+#print(flat_im2.shape)
 
+
+pt3d, pt2d, gpsarr = get_camera2d(xyz, reconstruction_path, (flat_im2.shape[0],flat_im2.shape[1]))
+pt2d = pt2d.astype(np.uint8)
 
 #gray to color so markers can be red!
 flat_im2 = np.dstack((flat_im2,flat_im2,flat_im2))
 
-print(pt2d)
+#print(flat_im2.shape)
 
-flat_im2[pt2d[0,:],pt2d[1,:],:] = np.array([0,0,255])
+for i in range (0,len(pt2d)):
+    
+    y_pos = pt2d[i,0]
+    x_pos = pt2d[i,1]
+    #print('pos: {},{}'.format(y_pos,x_pos))
+    
+    flat_im2[(y_pos-3):(y_pos+3),(x_pos-3):(x_pos+3),:] = np.array([0,0,255])
+
 
 cv2.imwrite(reconstruction_path + '/flatten/flatten_ply2.jpeg', flat_im2)
 
 #size should be dynamic!
-flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (3279,2986), colors)
+flat_im = flatten_by_plane_proj(xyz, np.array([0,0,1,0]), (flat_im2.shape[0],flat_im2.shape[1]), colors)
 
 cv2.imwrite(reconstruction_path + '/flatten/flatten_ply.jpeg', flat_im)

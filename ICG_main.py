@@ -173,7 +173,8 @@ if args.gps2jpg:
     else:
         os.system('python3 ICG/add_gps2jpg.py ' + sys.argv[2])
         
-        
+
+##wenn bereits in data/name dann nicht kopieren/anlegen!        
 if args.reconstruct:
     if not os.path.exists(sys.argv[2]):
         print("Bitte gib den Pfad zu den *.jpg")
