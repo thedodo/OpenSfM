@@ -131,11 +131,8 @@ def cleanPLY(ply_path, ply_cleaned):
     g_arr = np.array(plydata.elements[0].data['diffuse_green'])
     b_arr = np.array(plydata.elements[0].data['diffuse_blue'])
     
-    
-    
     high = np.percentile(z_arr,99.5)
     low = np.percentile(z_arr, 2)     
-    
     
     idx_bad_pos = np.where(z_arr > high)
     idx_bad_neg = np.where(z_arr < low)
@@ -259,12 +256,12 @@ def get_camera2d(points, opensfm_data_path, size):
     return pt3d, pt2d, gpsarr
 
 
-def getNormPos(campos):
+def getNormPos(campos, size):
     
     campos_norm = np.zeros((len(campos[:,0]),2))
     
-    x_m = 640/2
-    y_m = 480/2
+    x_m = size[0]/2
+    y_m = size[1]/2
     
     campos_norm[:,0] = (campos[:,0] - x_m) * 0.1
     campos_norm[:,1] = (campos[:,1] - y_m) * 0.1
