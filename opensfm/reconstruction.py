@@ -790,7 +790,11 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         return False, {'num_common_points': len(bs)}
 
     T = multiview.absolute_pose_ransac(
+<<<<<<< HEAD
         bs, Xs, threshold, 1000, 0.999)
+=======
+        bs, Xs, threshold, 2000, 0.999)
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
 
     R = T[:, :3]
     t = T[:, 3]
@@ -808,7 +812,10 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         'num_inliers': ninliers,
     }
     
+<<<<<<< HEAD
     min_inliers = 3
+=======
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
     if ninliers >= min_inliers:
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
@@ -822,8 +829,13 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         for i, succeed in enumerate(inliers):
             if succeed:
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+<<<<<<< HEAD
         print("Rotation = ", R)
         print("Translation = ", t)
+=======
+        # print("Rotation = ", R)
+        # print("Translation = ", t)
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
         # if(not(localize)):
         return R, t
         # if(not(reference is None)):
@@ -1396,6 +1408,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     if(localize):
         #Localize each image.
         for reconstruction in data.load_reconstruction():     
+<<<<<<< HEAD
             # print("reconstruction: ", reconstruction)
             # perImageDict = {k:[k] for k in remaining_images}
             # for im1, im2 in pairs:
@@ -1415,12 +1428,20 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             threshold = data.config['resection_threshold']
             min_inliers = data.config['resection_min_inliers']
             # for image, num_tracks in candidates:
+=======
+            threshold = data.config['resection_threshold']
+            min_inliers = data.config['resection_min_inliers']
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
             for image in remaining_images:
                 shot_data_dict = {}
                 camera = reconstruction.cameras[data.load_exif(image)['camera']]
                 print("Exif of ", image, " :", camera)
                 metadata = get_image_metadata(data, image)
                 reference = data.load_reference()
+<<<<<<< HEAD
+=======
+
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
                 R, t = localize_shot(tracks_manager, reconstruction, image,
                                     camera, metadata, threshold, min_inliers)
                 if ((R is None) or (t is None)):
@@ -1430,6 +1451,13 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 shot = reconstruction.shots[image]
 
                 logger.info("Localized image {0}".format(image))
+<<<<<<< HEAD
+=======
+                
+                config = data.config
+                bundle(reconstruction, camera_priors, None, config)
+                remove_outliers(reconstruction, config)
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
 
                 print("Shot ", image, " rotation :", shot.pose.rotation)
                 print("Shot ", image, " translation :", shot.pose.translation)
@@ -1460,10 +1488,13 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
             os.remove(image_matches_path)
             print("Removed: ", image_matches_path)
 
+<<<<<<< HEAD
                 # for im1, im2 in pairs:
                 #     if(im1 != im):
                 #         continue 
                 #     print("Doing ", im1, " and ", im2)
+=======
+>>>>>>> c516e26ca7cd9820917b9dcf683c906d361b06e7
         print("localize dict = ", localize_dict)
         with open(os.path.join(data.data_path, "localize", "localize.json"), 'w') as fp:
             json.dump(localize_dict, fp)
