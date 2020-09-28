@@ -17,6 +17,7 @@ parser.add_argument('--reconstruct', help ='Ordner mit allen *.jpg für eine 3D 
 parser.add_argument('--georef_ply', help ='3D Rekonstruktion von XYZ zu Lat/Long bringen. Verwendung: --georef_ply ./data/name')
 parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine Übersicht und Voraussetzungen bitte auf: https://github.com/thedodo/OpenSfM.git schauen. Verwendung --localize data/folder/localize/image.jpg')
 parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply ./data/name/')
+parser.add_argument('--gps2name', help='Nimmt Lat/Lon und übersetzt es zu einem Straßennamen und relative Position auf Straße in Prozent. Verwendung: --gps2name lat long', type=float, nargs='+')
 args = parser.parse_args()
 
 ##maybe show GPS on google map? https://www.google.com/maps/dir/33.93729,-106.85761/33.91629,-106.866761/33.98729,-106.85861//@34.0593359,-106.7131944,11z
@@ -162,7 +163,7 @@ if args.test_loc:
     rand_name = rand_to_loc.split('/')[-1]
     os.system('cp '+ rand_to_loc + ' ./data/inffeldgasse/localize/' + rand_name)
     os.system('bin/localize data/inffeldgasse')
-    os.system('python3 ICG/gps_to_name.py data/inffeldgasse/localize/localize.json ' + rand_name)
+    os.system('python3 ICG/loc_json2name.py data/inffeldgasse/localize/localize.json ' + rand_name)
     
     os.system('python3 ICG/flatten_pointcloud.py data/inffeldgasse')
     
@@ -234,7 +235,7 @@ if args.localize:
     
     
     os.system('bin/localize ' + path_to_image)
-    os.system('python3 ICG/gps_to_name.py '+ path_to_image +'/localize/localize.json ' + image_name)
+    os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + image_name)
 
 
 if args.flatten_ply:
@@ -243,3 +244,9 @@ if args.flatten_ply:
         exit()
     path_to_ply = sys.argv[2]
     os.system('python3 ICG/flatten_pointcloud.py '+ path_to_ply)
+
+
+if args.gps2name:
+    lat = sys.argv[2]
+    lon = sys.argv[3]
+    os.system('python3 ICG/gps2name.py '+ lat + ' ' + lon)
