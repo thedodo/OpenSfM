@@ -33,7 +33,7 @@ class Command:
             gps = {}
             gps['latitude'] = float(lat)
             gps['longitude'] = float(lon)
-            gps['altitude'] = 5.0
+            gps['altitude'] = 0.0
     
             exif_data = data.load_exif(name)
             exif_data['gps'] = gps
