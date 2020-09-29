@@ -8,6 +8,7 @@ PYTHON=${2:-python3}
 echo "Running using Python command: $PYTHON"
 
 $PYTHON $DIR/opensfm extract_metadata $1
+$PYTHON $DIR/opensfm write_gps $1
 $PYTHON $DIR/opensfm detect_features $1
 $PYTHON $DIR/opensfm match_features $1
 $PYTHON $DIR/opensfm create_tracks $1

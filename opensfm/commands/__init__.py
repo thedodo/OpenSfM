@@ -17,7 +17,7 @@ from . import export_colmap
 from . import export_geocoords
 from . import create_submodels
 from . import align_submodels
-
+from . import write_gps
 
 opensfm_commands = [
     extract_metadata,
@@ -38,4 +38,5 @@ opensfm_commands = [
     export_geocoords,
     create_submodels,
     align_submodels,
+    write_gps,
 ]

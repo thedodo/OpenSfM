@@ -21,7 +21,6 @@ with open(json_name) as json_file:
 print(data)
 
 #first is image name in loc folder
-
 if 'gps' not in data[im_name]:
     print('Leider konnte keine Addresse gefunden werden')
     exit()

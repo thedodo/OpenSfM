@@ -18,10 +18,11 @@ parser.add_argument('--georef_ply', help ='3D Rekonstruktion von XYZ zu Lat/Long
 parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine Übersicht und Voraussetzungen bitte auf: https://github.com/thedodo/OpenSfM.git schauen. Verwendung --localize data/folder/localize/image.jpg')
 parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply ./data/name/')
 parser.add_argument('--gps2name', help='Nimmt Lat/Lon und übersetzt es zu einem Straßennamen und relative Position auf Straße in Prozent. Verwendung: --gps2name lat long', type=float, nargs='+')
+
 args = parser.parse_args()
 
 ##maybe show GPS on google map? https://www.google.com/maps/dir/33.93729,-106.85761/33.91629,-106.866761/33.98729,-106.85861//@34.0593359,-106.7131944,11z
-
+#if png => mogrify -format jpg *.png; rm *.png
 
 class ImageMetaData(object):
     '''
@@ -184,14 +185,18 @@ if args.reconstruct:
         if(folder_name == ''):
             folder_name = sys.argv[2].split('/')[-2]
            
-        print(folder_name)
-        os.system('mkdir ./data/'+folder_name+'/images')
+        #print(folder_name)
+        #does not do what i want!!
+        if 'data/' not in folder_name :
+            
+            os.system('mkdir ./data/'+folder_name+'/images')
         
-        im_list = glob.glob(sys.argv[2]+'/*.jpg')
-        for im in im_list:
-            im_name = im.split('/')[-1]
-            os.system('cp ' + im + ' ./data/'+folder_name + '/images/' + im_name)
+            im_list = glob.glob(sys.argv[2]+'/*.jpg')
+            for im in im_list:
+                im_name = im.split('/')[-1]
+                os.system('cp ' + im + ' ./data/'+folder_name + '/images/' + im_name)
         
+        #wrong name if correct folder!
         os.system('./bin/opensfm_run_all data/' + folder_name + ' > log_recons.txt')
         
         file_path = './data/' + folder_name + '/undistorted/depthmaps/merged.ply'
