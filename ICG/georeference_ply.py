@@ -7,6 +7,7 @@ import  argparse
 from opensfm.align import align_reconstruction_naive_similarity, apply_similarity
 from opensfm.dense import merge_depthmaps 
 from pyntcloud import PyntCloud
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -25,7 +26,8 @@ if __name__ == "__main__":
         xyz[i, :] = reference.to_lla(xyz[i, 0], xyz[i, 1], xyz[i, 2])
 
     cloud.xyz = xyz 
-    cloud.to_file("merged_geo.ply")
+    merged_file = args.opensfm_data_path + '/undistorted/depthmaps/merged_geo.ply' 
+    cloud.to_file(merged_file)
     print(cloud.xyz)
     print("Saved pointcloud with Lat Long Alt coordinates")
     #Replace shot gps positions with exif data. 
