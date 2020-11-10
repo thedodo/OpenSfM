@@ -151,8 +151,8 @@ def bundle(reconstruction, camera_priors, gcp, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'],
-        config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'])
+        # config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(config['bundle_max_iterations'])
     ba.set_linear_solver_type("SPARSE_SCHUR")
@@ -219,8 +219,8 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'],
-        config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'])
+        # config['radial_distortion_k4_sd']
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")
@@ -232,7 +232,9 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
     s = ba.get_shot(shot_id)
     shot.pose.rotation = [s.r[0], s.r[1], s.r[2]]
     shot.pose.translation = [s.t[0], s.t[1], s.t[2]]
+    reconstruction.shots[shot_id].pose = shot.pose
 
+    return shot
     # print("Shot ", shot_id, " rotation :", shot.pose.rotation)
     # print("Shot ", shot_id, " translation :", shot.pose.translation)
 
@@ -789,8 +791,7 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
     if len(bs) < 5:
         return False, {'num_common_points': len(bs)}
 
-    T = multiview.absolute_pose_ransac(
-        bs, Xs, threshold, 2000, 0.999)
+    T = multiview.absolute_pose_ransac(bs, Xs, threshold, 2000, 0.999)
 
     R = T[:, :3]
     t = T[:, 3]
@@ -812,15 +813,21 @@ def localize_shot(tracks_manager, reconstruction, shot_id,
         R = T[:, :3].T
         t = -R.dot(T[:, 3])
         if shot_id in reconstruction.shots:
+            print("Updated shot: ", shot_id)
             pose = pygeometry.Pose(R,t)
             reconstruction.shots[shot_id].pose.rotation = pose.rotation
             reconstruction.shots[shot_id].pose.translation = pose.translation
         else:
+            print("Added shot ", shot_id)
             shot = reconstruction.create_shot(shot_id, camera.id, pygeometry.Pose(R,t))
             shot.metadata = metadata
         for i, succeed in enumerate(inliers):
             if succeed:
                 add_observation_to_reconstruction(tracks_manager, reconstruction, shot_id, ids[i])
+
+        # print("Rotation = ", R)
+        # print("Translation = ", t)
+        # if(not(localize)):
         return R, t
         # if(not(reference is None)):
         #     gps = reference.to_lla(t[0], t[1], t[2])
@@ -1392,7 +1399,6 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     if(localize):
         #Localize each image.
         for reconstruction in data.load_reconstruction():     
-            
             threshold = data.config['resection_threshold']
             min_inliers = data.config['resection_min_inliers']
             for image in remaining_images:
@@ -1401,20 +1407,19 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 print("Exif of ", image, " :", camera)
                 metadata = get_image_metadata(data, image)
                 reference = data.load_reference()
-                
                 R, t = localize_shot(tracks_manager, reconstruction, image,
                                     camera, metadata, threshold, min_inliers)
                 if ((R is None) or (t is None)):
                     continue
-                bundle_single_view(reconstruction, image,
+                shot = bundle_single_view(reconstruction, image,
                                 camera_priors, data.config)
-                shot = reconstruction.shots[image]
 
                 logger.info("Localized image {0}".format(image))
                 
                 config = data.config
                 bundle(reconstruction, camera_priors, None, config)
                 remove_outliers(reconstruction, config)
+                # shot = reconstruction.shots[image]
 
                 print("Shot ", image, " rotation :", shot.pose.rotation)
                 print("Shot ", image, " translation :", shot.pose.translation)
@@ -1428,7 +1433,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                     shot_data_dict['gps'] = gps
                 
                 localize_dict[image] = shot_data_dict
-                # remaining_images.remove(image)
+                remaining_images.remove(image)
 
                 #Clean up images after localization. 
         image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")

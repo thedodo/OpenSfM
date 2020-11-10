@@ -3,7 +3,7 @@ from itertools import combinations
 from collections import defaultdict
 import numpy as np
 import os.path
-
+import pickle
 import scipy.spatial as spatial
 
 from opensfm import bow
@@ -153,6 +153,8 @@ def compute_vlad_affinity(data, images_ref, images_cand,
     # construct VLAD histograms
     logger.info("Computing %d VLAD histograms" % len(need_load))
     histograms = vlad_histograms(need_load, data)
+
+
 
     # parallel VLAD neighbors computation
     args, processes, batch_size = create_parallel_matching_args(
@@ -387,16 +389,41 @@ def load_histograms(data, images):
     return histograms
 
 
+  
+def save_obj(path, obj):
+    with open(path, 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
 def vlad_histograms(images, data):
     """ Construct VLAD histograms from the image features.
 
         Returns a dictionary of VLAD vectors for the images.
     """
     vlads = {}
+    
+    vlad_path = os.path.join(data.data_path, "vlad_histograms.pkl")
+    vlad_there = os.path.exists(vlad_path)
+
+    #Take off any images that already have VLAD saved.
+    if(vlad_there):
+        vlads = load_obj(vlad_path)
+        print("Loaded VLAD descriptors from: ", vlad_path)
+        for im in images.copy():
+            if im in vlads:
+                images.remove(im)
+    
     for im in images:
         im_vlad = vlad.instance.vlad_histogram(data, im)
         if im_vlad is not None:
             vlads[im] = im_vlad
+    
+    if images or not(vlad_there): #If there were new images added, save.
+        save_obj(vlad_path, vlads)
+    
     return vlads
 
 
