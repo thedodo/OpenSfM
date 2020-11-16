@@ -9,15 +9,16 @@ from PIL.ExifTags import TAGS, GPSTAGS
 
 parser = argparse.ArgumentParser(description='ICG main function für SV4VI Projekt. (Getestet auf Ubuntu 18.04 LTS)')
 
-parser.add_argument('--build', help='Sollte zur Einrichtung der Software ausgeführt werden.', action="store_true")
-parser.add_argument('--test', help='Test ob die Einrichtung funktioniert hat.', action="store_true")
-parser.add_argument('--test_loc', help = 'Testet Lokalisierung uvm. Für eine genaue Übersicht: https://github.com/thedodo/OpenSfM.git', action="store_true")
+parser.add_argument('--build', help='Sollte zur Einrichtung der Software ausgeführt werden.', action= "store_true")
+parser.add_argument('--test', help='Test ob die Einrichtung funktioniert hat.', action= "store_true")
+parser.add_argument('--test_loc', help = 'Testet Lokalisierung uvm. Für eine genaue Übersicht: https://github.com/thedodo/OpenSfM.git', action= "store_true")
 parser.add_argument('--gps2jpg', help ='Fügt GPS Daten von *.cvs zu *.jpg hinzu. Verwendung: --gps2jpg pfad/zu/jpegundcvs')
 parser.add_argument('--reconstruct', help ='Ordner mit allen *.jpg für eine 3D Rekonstruktion. Dies ist Voraussetzung für die Lokalisierung. Verwendung --reconstruct pfad/zu/jpeg')
 parser.add_argument('--georef_ply', help ='3D Rekonstruktion von XYZ zu Lat/Long bringen. Verwendung: --georef_ply ./data/name')
 parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine Übersicht und Voraussetzungen bitte auf: https://github.com/thedodo/OpenSfM.git schauen. Verwendung --localize data/folder/localize/image.jpg')
 parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply ./data/name/')
 parser.add_argument('--gps2name', help='Nimmt Lat/Lon und übersetzt es zu einem Straßennamen und relative Position auf Straße in Prozent. Verwendung: --gps2name lat long', type=float, nargs='+')
+parser.add_argument('--clean_ply', help='Für das Filtern von Punktwolken. Wendet einen Hoch-und Tiefpassfilter auf die Punktwolke an. Verwendung: --clean_ply ./data/name')
 
 args = parser.parse_args()
 
@@ -103,6 +104,7 @@ class ImageMetaData(object):
 
 
 if args.build:
+    
     os.chdir('ICG/')
     os.system('./install_opensfm.sh > ../log_install.txt')
     os.chdir('../')
@@ -113,6 +115,7 @@ if args.build:
     
     
 if args.test:
+    
     os.system('./ICG/test_install.sh > log_test.txt')
     print('.....Fertig!')
     #file to check!
@@ -168,6 +171,7 @@ if args.test_loc:
     
     os.system('python3 ICG/flatten_pointcloud.py data/inffeldgasse')
     
+    
 if args.gps2jpg:
     
     if not os.path.exists(sys.argv[2]):
@@ -178,6 +182,7 @@ if args.gps2jpg:
 
 ##wenn bereits in data/name dann nicht kopieren/anlegen!        
 if args.reconstruct:
+    
     if not os.path.exists(sys.argv[2]):
         print("Bitte gib den Pfad zu den *.jpg")
     else:
@@ -237,13 +242,13 @@ if args.localize:
     if os.stat(path_to_image).st_size == 0:
         print('Leider konnte das Bild nicht gelesen werden')
         exit()
-    
-    
+
     os.system('bin/localize ' + path_to_image)
     os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + image_name)
 
 
 if args.flatten_ply:
+    
     if len(sys.argv) != 3:
         print('Bitte gib den Pfad zur Punktwolke ein')
         exit()
@@ -252,6 +257,13 @@ if args.flatten_ply:
 
 
 if args.gps2name:
+    
     lat = sys.argv[2]
     lon = sys.argv[3]
     os.system('python3 ICG/gps2name.py '+ lat + ' ' + lon)
+    
+if args.clean_ply:
+    
+    path = sys.argv[2]
+    os.system('python3 ICG/clean_ply.py --opensfm_data_path '+ path + ' --high 99.5 --low 2')
+    
