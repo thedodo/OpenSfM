@@ -40,6 +40,8 @@ Alle Schritte können auch einzeln mit folgenden Befehlen ausgeführt werden. Ei
 
 - python ICG_main.py --flatten_ply ./data/name/. Es wird eine 2D Abbildung der 3D Rekonstruktion in Vogelperspektive gemacht. Diese wird in ./data/name/flatten abgespeichert. 
 
+- python ICG_main.py --clean_ply ./data/name. Es wird ein Hoch- und Tiefpassfilter auf die Punktwolke angewendet um starke outlier zu entfernen (nur entlang der z-Achse!). Alle Punkte die außerhalb des [2,99.5] Quantil liegen werden entfernt. 
+
 ==========================================================================
 #### README von Mappillary zu OpenSfM:
 
