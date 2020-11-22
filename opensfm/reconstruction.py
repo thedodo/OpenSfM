@@ -151,8 +151,8 @@ def bundle(reconstruction, camera_priors, gcp, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'])
-        # config['radial_distortion_k4_sd'])
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(config['bundle_max_iterations'])
     ba.set_linear_solver_type("SPARSE_SCHUR")
@@ -219,8 +219,8 @@ def bundle_single_view(reconstruction, shot_id, camera_priors, config):
         config['radial_distortion_k2_sd'],
         config['tangential_distortion_p1_sd'],
         config['tangential_distortion_p2_sd'],
-        config['radial_distortion_k3_sd'])
-        # config['radial_distortion_k4_sd']
+        config['radial_distortion_k3_sd'],
+        config['radial_distortion_k4_sd'])
     ba.set_num_threads(config['processes'])
     ba.set_max_num_iterations(100)
     ba.set_linear_solver_type("DENSE_QR")
@@ -1415,6 +1415,7 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                                 camera_priors, data.config)
 
                 logger.info("Localized image {0}".format(image))
+
                 
                 config = data.config
                 bundle(reconstruction, camera_priors, None, config)
@@ -1434,6 +1435,13 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
                 
                 localize_dict[image] = shot_data_dict
                 remaining_images.remove(image)
+
+                reconstruction.remove_shot(image)
+                image_path = os.path.join(data.data_path, "images", image)
+                if(os.path.exists(image_path)):
+                    os.remove(image_path)
+                print("Removed shot ", shot, " after localization")
+
 
                 #Clean up images after localization. 
         image_metadata_path = os.path.join(data.data_path, "exif", image + ".exif")
