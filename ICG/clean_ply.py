@@ -68,17 +68,17 @@ if __name__ == "__main__":
     
     file = open(ply_cleaned,"w")
     file.write('''ply
-    #format ascii 1.0
-    #element vertex %d
-    #property float x
-    #property float y
-    #property float z
-    #property uchar red
-    #property uchar green
-    #property uchar blue
-    #property uchar alpha
-    #end_header
-    #%s
-    #'''%(len(x_arr_new),"".join(points)))
+    format ascii 1.0
+    element vertex %d
+    property float x
+    property float y
+    property float z
+    property uchar diffuse_red
+    property uchar diffuse_green
+    property uchar diffuse_blue
+    property uchar alpha
+    end_header
+    %s
+    '''%(len(x_arr_new),"".join(points)))
     
     file.close()
