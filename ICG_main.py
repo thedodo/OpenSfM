@@ -1,3 +1,4 @@
+# coding: utf8
 #created by Dominik Hirner and Chetan Kumar 09.09.2020
 import os
 import argparse
@@ -240,6 +241,9 @@ if args.localize:
     if len(sys.argv) != 3:
         print('Bitte gib den Pfad zum Bild ein')
         exit()
+    
+    os.system('python3 ICG/write_exif2file.py ' + sys.argv[2])
+    
     image_name = sys.argv[2].split('/')[-1]
     
     path_to_image = sys.argv[2].replace(image_name,'')
@@ -254,7 +258,10 @@ if args.localize:
         exit()
 
     os.system('bin/localize ' + path_to_image)
-    os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + image_name)
+    
+    new_im_name = image_name.split('.')[0] + 'exif.jpg'
+
+    os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + new_im_name)
 
 
 if args.flatten_ply:
