@@ -1395,6 +1395,10 @@ def incremental_reconstruction(data, tracks_manager,localize=False):
     report['reconstructions'] = []
 
     print(pairs)
+    
+    if pairs is None:
+        print('No match was found! Exiting')
+    
     localize_dict = {} 
     if(localize):
         #Localize each image.

@@ -5,11 +5,17 @@ import os
 import overpy
 import numpy as np
 from geopy import distance
+import os.path
+from os import path
 
 data = []
 #open should be dynamical obviously
 json_name = sys.argv[1]
 im_name = sys.argv[2]
+
+if not path.exists(json_name): 
+    print("Leider konnte das Bild nicht lokalisiert werden")
+    exit()
 
 if os.stat(json_name).st_size == 2:
     print('Leider konnte keine Addresse gefunden werden')
@@ -33,8 +39,8 @@ long = data[im_name]["gps"][1]
 # 47.069860, 15.443725 
 
 #Tummel close to road!
-lat = 47.069784
-long = 15.444058 
+#lat = 47.069784
+#long = 15.444058 
 
 #Tummel on road!
 #lat = 47.069860

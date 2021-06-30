@@ -42,6 +42,8 @@ Alle Schritte können auch einzeln mit folgenden Befehlen ausgeführt werden. Ei
 
 - python ICG_main.py --clean_ply ./data/name. Es wird ein Hoch- und Tiefpassfilter auf die Punktwolke angewendet um starke outlier zu entfernen (nur entlang der z-Achse!). Alle Punkte die außerhalb des [2,99.5] Quantil liegen werden entfernt. 
 
+- python ICG_main.py --getgps_exif ./data/name. GPS Tags der EXIF-Metadaten werden extrahiert und in gps_coord.txt gespeichert. Kann bei studio.mapbox angezeigt werden.
+
 ==========================================================================
 #### README von Mappillary zu OpenSfM:
 

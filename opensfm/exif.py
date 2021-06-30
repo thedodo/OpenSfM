@@ -33,6 +33,13 @@ def gps_to_decimal(values, reference):
     degrees = eval_frac(values[0])
     minutes = eval_frac(values[1])
     seconds = eval_frac(values[2])
+    if degrees is None:
+        degrees = 1.0
+    if minutes is None:
+        minutes = 1.0
+    if seconds is None:
+        seconds = 1.0
+    
     return sign * (degrees + minutes / 60 + seconds / 3600)
 
 

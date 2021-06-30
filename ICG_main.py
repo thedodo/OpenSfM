@@ -1,3 +1,4 @@
+# coding: utf8
 #created by Dominik Hirner and Chetan Kumar 09.09.2020
 import os
 import argparse
@@ -19,6 +20,7 @@ parser.add_argument('--localize', help ='Lokalisierung eines Bildes. Für eine �
 parser.add_argument('--flatten_ply', help='2D Darstellung der 3D Rekonstruktion. Verwendung: --flatten_ply ./data/name/')
 parser.add_argument('--gps2name', help='Nimmt Lat/Lon und übersetzt es zu einem Straßennamen und relative Position auf Straße in Prozent. Verwendung: --gps2name lat long', type=float, nargs='+')
 parser.add_argument('--clean_ply', help='Für das Filtern von Punktwolken. Wendet einen Hoch-und Tiefpassfilter auf die Punktwolke an. Verwendung: --clean_ply ./data/name')
+parser.add_argument('--getgps_exif', help='Für das extrahieren der GPS tags vom exif metadata. Wird in gps_coord.txt gespeichert. Verwendung: --getgps_exif ./data/name')
 
 args = parser.parse_args()
 
@@ -170,14 +172,23 @@ if args.test_loc:
     os.system('python3 ICG/loc_json2name.py data/inffeldgasse/localize/localize.json ' + rand_name)
     
     os.system('python3 ICG/flatten_pointcloud.py data/inffeldgasse')
-    
-    
+
+
+
 if args.gps2jpg:
     
     if not os.path.exists(sys.argv[2]):
         print("Bitte gib den Pfad zu den *.jpg und *.cvs Dateien an.")
     else:
         os.system('python3 ICG/add_gps2jpg.py ' + sys.argv[2])
+    
+    
+if args.getgps_exif:
+    
+    if not os.path.exists(sys.argv[2]):
+        print("Bitte gib den Pfad zu den rekonstruierten Daten an.")
+    else:
+        os.system('python3 ICG/extract_gps_exif.py ' + sys.argv[2])
         
 
 ##wenn bereits in data/name dann nicht kopieren/anlegen!        
@@ -230,6 +241,9 @@ if args.localize:
     if len(sys.argv) != 3:
         print('Bitte gib den Pfad zum Bild ein')
         exit()
+    
+    os.system('python3 ICG/write_exif2file.py ' + sys.argv[2])
+    
     image_name = sys.argv[2].split('/')[-1]
     
     path_to_image = sys.argv[2].replace(image_name,'')
@@ -244,7 +258,10 @@ if args.localize:
         exit()
 
     os.system('bin/localize ' + path_to_image)
-    os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + image_name)
+    
+    new_im_name = image_name.split('.')[0] + 'exif.jpg'
+
+    os.system('python3 ICG/loc_json2name.py '+ path_to_image +'/localize/localize.json ' + new_im_name)
 
 
 if args.flatten_ply:
